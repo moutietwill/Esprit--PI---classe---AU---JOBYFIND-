@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /projetweb_avec_evenements/public/
+    
+    # Block access to files and directories that shouldn't be public
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Rewrite to index.php
+    RewriteRule ^(.*)$ index.php/$1 [L]
+</IfModule>
