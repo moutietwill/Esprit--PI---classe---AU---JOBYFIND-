@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jobyfind – Formations</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue: #2563EB;
+  --blue-dark: #1D4ED8;
+  --blue-light: #EFF6FF;
+  --navy: #1E2D5A;
+  --navy-dark: #111827;
+  --green: #10B981;
+  --green-light: #ECFDF5;
+  --orange: #F59E0B;
+  --red: #EF4444;
+  --gray-50: #F8FAFC;
+  --gray-100: #F1F5F9;
+  --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1E293B;
+  --white: #ffffff;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+  --shadow: 0 4px 16px rgba(37,99,235,.12);
+  --shadow-lg: 0 10px 40px rgba(37,99,235,.18);
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--gray-50);color:var(--gray-800);line-height:1.6}
+h1,h2,h3,h4,h5{font-family:'Nunito',sans-serif;font-weight:800}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;border:none;outline:none;font-family:'DM Sans',sans-serif}
+input,select,textarea{font-family:'DM Sans',sans-serif}
+
+/* VIEWS */
+#view-front{display:block}
+#view-back{display:none}
+
+/* ===== NAVBAR ===== */
+.navbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40px;height:66px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm)}
+.navbar-brand{font-family:'Nunito',sans-serif;font-size:1.5rem;font-weight:900;letter-spacing:-0.5px}
+.navbar-brand span:first-child{color:var(--navy)}
+.navbar-brand span:last-child{color:var(--blue)}
+.navbar-links{display:flex;gap:28px;align-items:center}
+.navbar-links a{font-size:.9rem;font-weight:500;color:var(--gray-600);transition:.2s}
+.navbar-links a:hover{color:var(--blue)}
+.navbar-links a.active{color:var(--blue);font-weight:700}
+.nav-actions{display:flex;gap:10px;align-items:center}
+.btn-outline{padding:8px 18px;border:1.5px solid var(--blue);color:var(--blue);border-radius:50px;font-size:.85rem;font-weight:600;background:transparent;transition:.2s}
+.btn-outline:hover{background:var(--blue-light)}
+.btn-primary{padding:9px 20px;background:var(--blue);color:#fff;border-radius:50px;font-size:.85rem;font-weight:700;transition:.2s;box-shadow:0 2px 8px rgba(37,99,235,.3)}
+.btn-primary:hover{background:var(--blue-dark);transform:translateY(-1px)}
+.btn-admin{padding:8px 18px;background:var(--navy);color:#fff;border-radius:50px;font-size:.82rem;font-weight:600;transition:.2s}
+.btn-admin:hover{background:var(--navy-dark)}
+
+/* ===== HERO ===== */
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#2D4A8E 60%,var(--blue) 100%);padding:60px 40px 70px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-80px;width:340px;height:340px;background:rgba(255,255,255,.05);border-radius:50%}
+.hero::after{content:'';position:absolute;bottom:-40px;left:20%;width:180px;height:180px;background:rgba(255,255,255,.04);border-radius:50%}
+.hero-inner{max-width:800px;margin:0 auto;text-align:center;position:relative;z-index:1}
+.hero h1{color:#fff;font-size:2.6rem;line-height:1.2;margin-bottom:14px}
+.hero h1 em{color:#93C5FD;font-style:normal}
+.hero p{color:rgba(255,255,255,.75);font-size:1.05rem;max-width:560px;margin:0 auto 30px}
+.hero-stats{display:flex;gap:30px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.hero-stat{background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:var(--radius);padding:14px 24px;text-align:center;border:1px solid rgba(255,255,255,.15)}
+.hero-stat strong{display:block;font-size:1.6rem;font-weight:800;color:#fff;font-family:'Nunito',sans-serif}
+.hero-stat span{font-size:.8rem;color:rgba(255,255,255,.7)}
+
+/* ===== MAIN CONTENT ===== */
+.main-content{max-width:1200px;margin:0 auto;padding:50px 24px}
+
+/* ===== CATEGORY TABS ===== */
+.section-label{font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:10px}
+.section-title{font-size:1.7rem;color:var(--navy);margin-bottom:28px}
+.category-tabs{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:40px}
+.cat-tab{padding:10px 22px;border-radius:50px;font-size:.88rem;font-weight:600;border:1.5px solid var(--gray-200);background:var(--white);color:var(--gray-600);cursor:pointer;transition:.2s;display:flex;align-items:center;gap:7px}
+.cat-tab:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.cat-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 3px 12px rgba(37,99,235,.3)}
+.cat-tab .cat-count{background:rgba(255,255,255,.25);padding:1px 7px;border-radius:20px;font-size:.76rem;font-weight:700}
+.cat-tab:not(.active) .cat-count{background:var(--gray-100);color:var(--gray-500)}
+.cat-icon{font-size:1rem}
+
+/* ===== FORMATION GRID ===== */
+.formations-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:24px}
+.formation-card{background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--gray-200);transition:transform .25s,box-shadow .25s;position:relative;cursor:pointer}
+.formation-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg)}
+.formation-card:hover .card-hover-overlay{opacity:1}
+.card-img{height:170px;background:linear-gradient(135deg,var(--blue) 0%,var(--navy) 100%);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.card-img-emoji{font-size:3.5rem;opacity:.25}
+.card-img-badge{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);color:var(--navy);font-size:.74rem;font-weight:700;padding:4px 10px;border-radius:20px;font-family:'Nunito',sans-serif}
+.card-img-type{position:absolute;top:12px;right:12px;padding:4px 10px;border-radius:20px;font-size:.74rem;font-weight:700}
+.card-img-type.online{background:var(--green-light);color:var(--green)}
+.card-img-type.presential{background:#FEF3C7;color:#92400E}
+.card-body{padding:18px}
+.card-title{font-size:1rem;font-weight:800;color:var(--navy);margin-bottom:6px;font-family:'Nunito',sans-serif}
+.card-mentor{font-size:.82rem;color:var(--gray-500);margin-bottom:12px;display:flex;align-items:center;gap:5px}
+.card-mentor-avatar{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:.65rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif}
+.card-footer{border-top:1px solid var(--gray-100);padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+.card-price{font-size:1rem;font-weight:800;color:var(--blue);font-family:'Nunito',sans-serif}
+.card-price.free{color:var(--green)}
+.card-sessions{font-size:.78rem;color:var(--gray-500)}
+
+/* HOVER OVERLAY */
+.card-hover-overlay{position:absolute;inset:0;background:rgba(17,24,39,.88);opacity:0;transition:.25s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;border-radius:var(--radius)}
+.overlay-info{color:#fff;font-size:.82rem;display:flex;align-items:center;gap:7px}
+.overlay-info-icon{font-size:1rem}
+.overlay-enroll-btn{margin-top:10px;background:var(--blue);color:#fff;padding:11px 28px;border-radius:50px;font-weight:700;font-size:.92rem;transition:.2s;border:none;cursor:pointer;font-family:'Nunito',sans-serif}
+.overlay-enroll-btn:hover{background:var(--blue-dark)}
+.overlay-enroll-btn.enrolled{background:var(--green)!important;cursor:default}
+
+/* ===== ENROLL MODAL ===== */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-bg.active{display:flex}
+.modal{background:var(--white);border-radius:20px;width:100%;max-width:460px;padding:36px;position:relative;animation:slideUp .28s ease}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-close{position:absolute;top:16px;right:18px;background:var(--gray-100);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;color:var(--gray-500);display:flex;align-items:center;justify-content:center;transition:.2s}
+.modal-close:hover{background:var(--gray-200)}
+.modal-label{font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:6px}
+.modal-title{font-size:1.4rem;color:var(--navy);margin-bottom:6px}
+.modal-subtitle{font-size:.88rem;color:var(--gray-500);margin-bottom:24px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.83rem;font-weight:600;color:var(--gray-700);margin-bottom:6px}
+.form-group input{width:100%;padding:11px 14px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:.9rem;transition:.2s;background:var(--gray-50)}
+.form-group input:focus{border-color:var(--blue);background:#fff;outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.btn-enroll-confirm{width:100%;padding:13px;background:var(--blue);color:#fff;border-radius:50px;font-size:1rem;font-weight:700;margin-top:6px;transition:.2s;box-shadow:0 3px 12px rgba(37,99,235,.3);font-family:'Nunito',sans-serif}
+.btn-enroll-confirm:hover{background:var(--blue-dark)}
+.enroll-success{text-align:center;padding:20px 0}
+.success-icon{font-size:3.5rem;margin-bottom:14px}
+.success-title{font-size:1.3rem;font-weight:800;color:var(--green);font-family:'Nunito',sans-serif;margin-bottom:8px}
+.success-msg{font-size:.9rem;color:var(--gray-500)}
+
+/* ===== EMPTY STATE ===== */
+.empty-state{text-align:center;padding:70px 20px}
+.empty-state-icon{font-size:3rem;margin-bottom:16px;opacity:.4}
+.empty-state h3{color:var(--gray-600);font-size:1.2rem;margin-bottom:8px}
+.empty-state p{color:var(--gray-400);font-size:.9rem}
+
+/* =================== BACKOFFICE =================== */
+.back-layout{display:flex;height:100vh;overflow:hidden}
+.back-sidebar{width:260px;background:var(--navy);color:#fff;flex-shrink:0;display:flex;flex-direction:column;padding:0}
+.back-logo{padding:22px 24px 18px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.back-logo-text{font-family:'Nunito',sans-serif;font-size:1.35rem;font-weight:900}
+.back-logo-text span{color:#93C5FD}
+.back-logo-badge{background:rgba(255,255,255,.12);padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.05em}
+.back-nav{flex:1;padding:20px 12px;overflow-y:auto}
+.back-nav-section{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:8px 12px 6px;margin-top:14px}
+.back-nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;color:rgba(255,255,255,.65);font-size:.88rem;font-weight:500;transition:.2s;margin-bottom:2px}
+.back-nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.back-nav-item.active{background:var(--blue);color:#fff;font-weight:600}
+.back-nav-item .nav-badge{margin-left:auto;background:var(--red);color:#fff;padding:2px 7px;border-radius:20px;font-size:.7rem;font-weight:700}
+.back-nav-item .nav-icon{font-size:1rem;width:20px;text-align:center}
+.back-footer{padding:18px 24px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.back-footer-avatar{width:36px;height:36px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;font-family:'Nunito',sans-serif}
+.back-footer-info{flex:1}
+.back-footer-name{font-size:.88rem;font-weight:700}
+.back-footer-role{font-size:.72rem;color:rgba(255,255,255,.45)}
+.back-logout{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:1.1rem;transition:.2s}
+.back-logout:hover{color:#fff}
+
+.back-main{flex:1;overflow-y:auto;background:var(--gray-50)}
+.back-topbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.back-breadcrumb{font-size:.85rem;color:var(--gray-500);display:flex;align-items:center;gap:6px}
+.back-breadcrumb strong{color:var(--gray-800)}
+.back-topbar-right{display:flex;gap:10px;align-items:center}
+.back-search{display:flex;align-items:center;gap:8px;background:var(--gray-100);border-radius:50px;padding:7px 16px;font-size:.85rem;color:var(--gray-400);min-width:220px}
+.back-search input{background:none;border:none;outline:none;font-size:.85rem;width:100%;color:var(--gray-700)}
+.topbar-icon-btn{width:36px;height:36px;border-radius:50%;background:var(--gray-100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--gray-500);transition:.2s}
+.topbar-icon-btn:hover{background:var(--gray-200)}
+
+.back-content{padding:28px 32px}
+.back-page-title{font-size:1.5rem;color:var(--navy);margin-bottom:6px}
+.back-page-sub{font-size:.88rem;color:var(--gray-500);margin-bottom:28px}
+
+/* STAT CARDS */
+.stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--white);border-radius:var(--radius);padding:20px;border:1px solid var(--gray-200);display:flex;flex-direction:column;gap:8px}
+.stat-card-header{display:flex;align-items:center;justify-content:space-between}
+.stat-card-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-500)}
+.stat-card-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.stat-card-value{font-size:2rem;font-weight:900;font-family:'Nunito',sans-serif;color:var(--navy)}
+.stat-card-change{font-size:.78rem;display:flex;align-items:center;gap:4px}
+.stat-card-change.up{color:var(--green)}
+.stat-card-change.down{color:var(--red)}
+
+/* BACK TABLE */
+.back-panel{background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);overflow:hidden;margin-bottom:24px}
+.back-panel-header{padding:18px 22px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.back-panel-title{font-size:1rem;font-weight:800;color:var(--navy);font-family:'Nunito',sans-serif}
+.back-panel-sub{font-size:.8rem;color:var(--gray-400);margin-top:2px}
+.back-panel-actions{display:flex;gap:8px;align-items:center}
+.back-filter-select{padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:.83rem;color:var(--gray-600);background:var(--white);cursor:pointer;outline:none}
+.btn-add{display:flex;align-items:center;gap:6px;padding:9px 18px;background:var(--blue);color:#fff;border-radius:var(--radius-sm);font-size:.85rem;font-weight:700;transition:.2s;font-family:'DM Sans',sans-serif}
+.btn-add:hover{background:var(--blue-dark)}
+
+.back-table{width:100%;border-collapse:collapse}
+.back-table th{font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-400);padding:12px 18px;text-align:left;border-bottom:1px solid var(--gray-100);background:var(--gray-50)}
+.back-table td{padding:14px 18px;border-bottom:1px solid var(--gray-100);font-size:.87rem;color:var(--gray-700)}
+.back-table tr:last-child td{border-bottom:none}
+.back-table tr:hover td{background:var(--gray-50)}
+.back-table-checkbox{width:16px;height:16px;cursor:pointer;accent-color:var(--blue)}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.76rem;font-weight:700}
+.badge-blue{background:#DBEAFE;color:#1D4ED8}
+.badge-green{background:#D1FAE5;color:#065F46}
+.badge-orange{background:#FEF3C7;color:#92400E}
+.badge-red{background:#FEE2E2;color:#B91C1C}
+.badge-gray{background:var(--gray-100);color:var(--gray-600)}
+
+/* Action btns */
+.action-btns{display:flex;gap:6px}
+.action-btn{width:30px;height:30px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:var(--gray-500);transition:.2s}
+.action-btn:hover{border-color:var(--blue);color:var(--blue)}
+.action-btn.delete:hover{border-color:var(--red);color:var(--red)}
+
+/* CATEGORY COLOR DOT */
+.cat-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+
+/* BACK MODAL */
+.back-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:20px}
+.back-modal-bg.active{display:flex}
+.back-modal{background:var(--white);border-radius:20px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;animation:slideUp .25s ease}
+.back-modal-header{padding:24px 28px 18px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1}
+.back-modal-header h3{font-size:1.15rem;color:var(--navy)}
+.back-modal-body{padding:24px 28px}
+.back-modal-footer{padding:16px 28px 24px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--gray-100)}
+.back-form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.back-form-row.full{grid-template-columns:1fr}
+.back-form-group{display:flex;flex-direction:column;gap:6px}
+.back-form-group label{font-size:.82rem;font-weight:600;color:var(--gray-700)}
+.back-form-group input,.back-form-group select,.back-form-group textarea{padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:.88rem;color:var(--gray-800);outline:none;transition:.2s;background:var(--gray-50);font-family:'DM Sans',sans-serif}
+.back-form-group input:focus,.back-form-group select:focus,.back-form-group textarea:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.09)}
+.back-form-group textarea{resize:vertical;min-height:80px}
+.btn-cancel{padding:10px 22px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:.88rem;font-weight:600;color:var(--gray-600);background:var(--white);transition:.2s}
+.btn-cancel:hover{border-color:var(--gray-400)}
+.btn-save{padding:10px 26px;background:var(--blue);color:#fff;border-radius:var(--radius-sm);font-size:.88rem;font-weight:700;transition:.2s}
+.btn-save:hover{background:var(--blue-dark)}
+.btn-danger{padding:10px 22px;background:var(--red);color:#fff;border-radius:var(--radius-sm);font-size:.88rem;font-weight:700;transition:.2s}
+.btn-danger:hover{background:#C91C1C}
+
+/* ENROLLMENTS PANEL */
+.enroll-table .enroll-course{font-weight:600;color:var(--navy);font-family:'Nunito',sans-serif;font-size:.9rem}
+.enroll-table .enroll-date{font-size:.8rem;color:var(--gray-400)}
+
+/* Notification dot */
+.notif-dot{position:relative}
+.notif-dot::after{content:'';position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--red);border-radius:50%;border:2px solid var(--white)}
+
+/* Responsive tweaks */
+@media(max-width:900px){
+  .stat-cards{grid-template-columns:repeat(2,1fr)}
+  .back-sidebar{width:220px}
+}
+@media(max-width:640px){
+  .hero h1{font-size:1.9rem}
+  .navbar{padding:0 18px}
+  .back-layout{flex-direction:column}
+}
+
+/* Toast */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--navy);color:#fff;padding:13px 22px;border-radius:12px;font-size:.88rem;font-weight:600;z-index:9999;transform:translateY(80px);opacity:0;transition:.3s;display:flex;align-items:center;gap:9px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+
+/* Category card colors */
+.cat-color-1{background:linear-gradient(135deg,#2563EB,#1E40AF)}
+.cat-color-2{background:linear-gradient(135deg,#7C3AED,#4C1D95)}
+.cat-color-3{background:linear-gradient(135deg,#0891B2,#164E63)}
+.cat-color-4{background:linear-gradient(135deg,#D97706,#92400E)}
+.cat-color-5{background:linear-gradient(135deg,#059669,#064E3B)}
+.cat-color-6{background:linear-gradient(135deg,#DC2626,#7F1D1D)}
+</style>
+</head>
+<body>
+
+<!-- ======================== FRONTEND ======================== -->
+<div id="view-front">
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand"><span>Joby</span><span>find</span></div>
+    <div class="navbar-links">
+      <a href="#" class="active">Formations</a>
+      <a href="#">À propos</a>
+      <a href="#">Contact</a>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-outline">Connexion</button>
+      <button class="btn-primary">S'inscrire</button>
+      <button class="btn-admin" onclick="switchView('back')">⚙ Admin</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <h1>Développez vos <em>compétences</em><br>avec les meilleures formations</h1>
+      <p>Découvrez nos formations animées par des mentors experts pour booster votre carrière ou votre projet entrepreneurial.</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><strong id="stat-formations">0</strong><span>Formations</span></div>
+        <div class="hero-stat"><strong id="stat-mentors">0</strong><span>Mentors</span></div>
+        <div class="hero-stat"><strong id="stat-enrolled">0</strong><span>Inscrits</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main -->
+  <div class="main-content">
+    <p class="section-label">Catalogue</p>
+    <h2 class="section-title">Choisissez votre domaine</h2>
+
+    <!-- Category Tabs -->
+    <div class="category-tabs" id="categoryTabs">
+      <button class="cat-tab active" data-cat="all" onclick="filterCategory('all',this)">
+        <span class="cat-icon">🗂️</span> Tout voir <span class="cat-count" id="count-all">0</span>
+      </button>
+    </div>
+
+    <!-- Formation Cards -->
+    <div class="formations-grid" id="formationsGrid"></div>
+  </div>
+</div>
+
+<!-- ======================== BACKOFFICE ======================== -->
+<div id="view-back">
+  <div class="back-layout">
+    <!-- Sidebar -->
+    <aside class="back-sidebar">
+      <div class="back-logo">
+        <div class="navbar-brand" style="font-size:1.2rem"><span style="color:#fff">Joby</span><span style="color:#93C5FD">find</span></div>
+        <span class="back-logo-badge">ADMIN</span>
+      </div>
+      <nav class="back-nav">
+        <div class="back-nav-section">Tableau de bord</div>
+        <div class="back-nav-item" onclick="showBackSection('dashboard',this)">
+          <span class="nav-icon">📊</span> Vue d'ensemble
+        </div>
+        <div class="back-nav-section">Gestion</div>
+        <div class="back-nav-item active" onclick="showBackSection('categories',this)">
+          <span class="nav-icon">🗂️</span> Catégories
+        </div>
+        <div class="back-nav-item" onclick="showBackSection('formations',this)">
+          <span class="nav-icon">🎓</span> Formations
+        </div>
+        <div class="back-nav-item" onclick="showBackSection('enrollments',this)">
+          <span class="nav-icon">👥</span> Inscriptions
+          <span class="nav-badge" id="enroll-badge">0</span>
+        </div>
+      </nav>
+      <div class="back-footer">
+        <div class="back-footer-avatar">SA</div>
+        <div class="back-footer-info">
+          <div class="back-footer-name">Super Admin</div>
+          <div class="back-footer-role">admin@jobyfind.tn</div>
+        </div>
+        <button class="back-logout" onclick="switchView('front')" title="Retour au site">↩</button>
+      </div>
+    </aside>
+
+    <!-- Main area -->
+    <div class="back-main">
+      <div class="back-topbar">
+        <div class="back-breadcrumb">Admin › <strong id="back-section-name">Catégories</strong></div>
+        <div class="back-topbar-right">
+          <div class="back-search"><span>🔍</span><input type="text" placeholder="Rechercher..." oninput="backSearch(this.value)"></div>
+          <button class="topbar-icon-btn notif-dot" title="Notifications">🔔</button>
+          <button class="topbar-icon-btn" onclick="switchView('front')" title="Voir le site">👁</button>
+        </div>
+      </div>
+
+      <div class="back-content">
+        <!-- DASHBOARD SECTION -->
+        <div id="section-dashboard" style="display:none">
+          <h2 class="back-page-title">Vue d'ensemble</h2>
+          <p class="back-page-sub">Résumé de la plateforme Jobyfind</p>
+          <div class="stat-cards">
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-card-label">Formations</span>
+                <div class="stat-card-icon" style="background:#EFF6FF">🎓</div>
+              </div>
+              <div class="stat-card-value" id="dash-total-formations">0</div>
+              <div class="stat-card-change up">↑ Total actif</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-card-label">Catégories</span>
+                <div class="stat-card-icon" style="background:#F5F3FF">🗂️</div>
+              </div>
+              <div class="stat-card-value" id="dash-total-cats">0</div>
+              <div class="stat-card-change up">↑ Organisées</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-card-label">Inscriptions</span>
+                <div class="stat-card-icon" style="background:#ECFDF5">👥</div>
+              </div>
+              <div class="stat-card-value" id="dash-total-enroll">0</div>
+              <div class="stat-card-change up">↑ Ce mois</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-card-label">En ligne</span>
+                <div class="stat-card-icon" style="background:#FFF7ED">🌐</div>
+              </div>
+              <div class="stat-card-value" id="dash-online">0</div>
+              <div class="stat-card-change">Formations online</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CATEGORIES SECTION -->
+        <div id="section-categories">
+          <h2 class="back-page-title">Gestion des catégories</h2>
+          <p class="back-page-sub">Créez et gérez les catégories de formations</p>
+          <div class="back-panel">
+            <div class="back-panel-header">
+              <div>
+                <div class="back-panel-title">Catégories</div>
+                <div class="back-panel-sub" id="cat-count-label">0 catégorie(s)</div>
+              </div>
+              <div class="back-panel-actions">
+                <button class="btn-add" onclick="openCatModal()">＋ Nouvelle catégorie</button>
+              </div>
+            </div>
+            <table class="back-table" id="catTable">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" class="back-table-checkbox"></th>
+                  <th>Catégorie</th>
+                  <th>Icône</th>
+                  <th>Nb. Formations</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="catTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- FORMATIONS SECTION -->
+        <div id="section-formations" style="display:none">
+          <h2 class="back-page-title">Gestion des formations</h2>
+          <p class="back-page-sub">Ajoutez et gérez les formations de la plateforme</p>
+          <div class="back-panel">
+            <div class="back-panel-header">
+              <div>
+                <div class="back-panel-title">Formations</div>
+                <div class="back-panel-sub" id="form-count-label">0 formation(s)</div>
+              </div>
+              <div class="back-panel-actions">
+                <select class="back-filter-select" id="filterCatSelect" onchange="renderFormationsTable()">
+                  <option value="all">Toutes les catégories</option>
+                </select>
+                <button class="btn-add" onclick="openFormModal()">＋ Nouvelle formation</button>
+              </div>
+            </div>
+            <table class="back-table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" class="back-table-checkbox"></th>
+                  <th>Formation</th>
+                  <th>Catégorie</th>
+                  <th>Mentor</th>
+                  <th>Type</th>
+                  <th>Durée</th>
+                  <th>Coût</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="formTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ENROLLMENTS SECTION -->
+        <div id="section-enrollments" style="display:none">
+          <h2 class="back-page-title">Inscriptions</h2>
+          <p class="back-page-sub">Toutes les demandes d'inscription aux formations</p>
+          <div class="back-panel">
+            <div class="back-panel-header">
+              <div>
+                <div class="back-panel-title">Liste des inscriptions</div>
+                <div class="back-panel-sub" id="enroll-count-label">0 inscription(s)</div>
+              </div>
+            </div>
+            <table class="back-table enroll-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Participant</th>
+                  <th>Email</th>
+                  <th>Téléphone</th>
+                  <th>Formation</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="enrollTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ENROLL MODAL ===== -->
+<div class="modal-bg" id="enrollModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeEnrollModal()">✕</button>
+    <div id="enrollFormWrap">
+      <p class="modal-label">Inscription</p>
+      <h3 class="modal-title" id="enrollFormTitle">S'inscrire à la formation</h3>
+      <p class="modal-subtitle">Remplissez vos informations pour vous inscrire</p>
+      <div class="form-group">
+        <label>Nom complet *</label>
+        <input type="text" id="enrollName" placeholder="Ex: Mohamed Ben Ali">
+      </div>
+      <div class="form-group">
+        <label>Téléphone *</label>
+        <input type="tel" id="enrollPhone" placeholder="Ex: +216 XX XXX XXX">
+      </div>
+      <div class="form-group">
+        <label>Adresse e-mail *</label>
+        <input type="email" id="enrollEmail" placeholder="vous@exemple.com">
+      </div>
+      <button class="btn-enroll-confirm" onclick="confirmEnroll()">✓ Confirmer l'inscription</button>
+    </div>
+    <div id="enrollSuccessWrap" style="display:none">
+      <div class="enroll-success">
+        <div class="success-icon">🎉</div>
+        <div class="success-title">Inscription réussie !</div>
+        <p class="success-msg">Vous êtes bien inscrit(e) à <strong id="successFormationName"></strong>. Nous vous contacterons sous peu.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BACK CATEGORY MODAL ===== -->
+<div class="back-modal-bg" id="catModal">
+  <div class="back-modal">
+    <div class="back-modal-header">
+      <h3 id="catModalTitle">Nouvelle catégorie</h3>
+      <button class="modal-close" onclick="closeCatModal()">✕</button>
+    </div>
+    <div class="back-modal-body">
+      <div class="back-form-row">
+        <div class="back-form-group">
+          <label>Nom de la catégorie *</label>
+          <input type="text" id="catName" placeholder="Ex: Marketing Digital">
+        </div>
+        <div class="back-form-group">
+          <label>Icône (emoji)</label>
+          <input type="text" id="catIcon" placeholder="📈" maxlength="4">
+        </div>
+      </div>
+      <div class="back-form-row full">
+        <div class="back-form-group">
+          <label>Description</label>
+          <textarea id="catDesc" placeholder="Description courte de la catégorie..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="back-modal-footer">
+      <button class="btn-cancel" onclick="closeCatModal()">Annuler</button>
+      <button class="btn-save" onclick="saveCat()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BACK FORMATION MODAL ===== -->
+<div class="back-modal-bg" id="formModal">
+  <div class="back-modal">
+    <div class="back-modal-header">
+      <h3 id="formModalTitle">Nouvelle formation</h3>
+      <button class="modal-close" onclick="closeFormModal()">✕</button>
+    </div>
+    <div class="back-modal-body">
+      <div class="back-form-row full">
+        <div class="back-form-group">
+          <label>Titre de la formation *</label>
+          <input type="text" id="fTitle" placeholder="Ex: Maîtriser le Marketing Digital">
+        </div>
+      </div>
+      <div class="back-form-row">
+        <div class="back-form-group">
+          <label>Catégorie *</label>
+          <select id="fCat"></select>
+        </div>
+        <div class="back-form-group">
+          <label>Mentor / Formateur *</label>
+          <input type="text" id="fMentor" placeholder="Ex: Sarra Boughanmi">
+        </div>
+      </div>
+      <div class="back-form-row">
+        <div class="back-form-group">
+          <label>Type</label>
+          <select id="fType">
+            <option value="online">En ligne</option>
+            <option value="presential">Présentiel</option>
+          </select>
+        </div>
+        <div class="back-form-group">
+          <label>Lieu (si présentiel)</label>
+          <input type="text" id="fLocation" placeholder="Ex: Tunis Centre">
+        </div>
+      </div>
+      <div class="back-form-row">
+        <div class="back-form-group">
+          <label>Durée</label>
+          <input type="text" id="fDuration" placeholder="Ex: 3 mois / 20h">
+        </div>
+        <div class="back-form-group">
+          <label>Nombre de séances</label>
+          <input type="number" id="fSessions" placeholder="Ex: 12" min="1">
+        </div>
+      </div>
+      <div class="back-form-row">
+        <div class="back-form-group">
+          <label>Date de début</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="back-form-group">
+          <label>Coût (TND)</label>
+          <input type="text" id="fCost" placeholder="Ex: 350 TND ou Gratuit">
+        </div>
+      </div>
+      <div class="back-form-row full">
+        <div class="back-form-group">
+          <label>Description</label>
+          <textarea id="fDesc" placeholder="Description détaillée de la formation..." style="min-height:90px"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="back-modal-footer">
+      <button class="btn-cancel" onclick="closeFormModal()">Annuler</button>
+      <button class="btn-save" onclick="saveFormation()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="back-modal-bg" id="deleteModal">
+  <div class="back-modal" style="max-width:380px">
+    <div class="back-modal-header">
+      <h3>Confirmer la suppression</h3>
+      <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+    </div>
+    <div class="back-modal-body">
+      <p style="color:var(--gray-600);font-size:.92rem">Êtes-vous sûr(e) de vouloir supprimer <strong id="deleteItemName"></strong> ? Cette action est irréversible.</p>
+    </div>
+    <div class="back-modal-footer">
+      <button class="btn-cancel" onclick="closeDeleteModal()">Annuler</button>
+      <button class="btn-danger" onclick="confirmDelete()">🗑 Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== DATA STORE =====================
+let categories = [
+  {id:1, name:'Marketing Digital', icon:'📈', desc:'Stratégies digitales et réseaux sociaux', color:'cat-color-1'},
+  {id:2, name:'Développement Web', icon:'💻', desc:'Frontend, Backend et Full Stack', color:'cat-color-2'},
+  {id:3, name:'Finance & Gestion', icon:'💰', desc:'Comptabilité, gestion financière', color:'cat-color-3'},
+  {id:4, name:'Communication', icon:'🎤', desc:'Prise de parole et leadership', color:'cat-color-4'},
+  {id:5, name:'Design & UX', icon:'🎨', desc:'Design graphique et expérience utilisateur', color:'cat-color-5'},
+];
+
+let formations = [
+  {id:1, catId:1, title:'Maîtriser Instagram & TikTok pour son business', mentor:'Sarra Boughanmi', type:'online', location:'', duration:'6 semaines', sessions:12, date:'2025-05-10', cost:'290 TND', desc:'Apprenez à créer du contenu engageant et développer votre audience.'},
+  {id:2, catId:2, title:'React.js de zéro à héros', mentor:'Karim Mansouri', type:'online', location:'', duration:'3 mois', sessions:24, date:'2025-05-15', cost:'450 TND', desc:'Maîtrisez React.js avec des projets pratiques et concrets.'},
+  {id:3, catId:3, title:'Gestion financière pour entrepreneurs', mentor:'Lina Hamdi', type:'presential', location:'Tunis Centre', duration:'2 jours', sessions:4, date:'2025-05-20', cost:'180 TND', desc:'Comprendre les états financiers et piloter votre activité.'},
+  {id:4, catId:4, title:'Leadership et prise de parole en public', mentor:'Amine Trabelsi', type:'presential', location:'Lac 2 Tunis', duration:'1 journée', sessions:2, date:'2025-06-01', cost:'Gratuit', desc:'Développez confiance et impact lors de vos prises de parole.'},
+  {id:5, catId:5, title:'UI/UX Design avec Figma', mentor:'Mariem Sassi', type:'online', location:'', duration:'4 semaines', sessions:8, date:'2025-06-10', cost:'320 TND', desc:'Créez des interfaces modernes et intuitives avec Figma.'},
+  {id:6, catId:1, title:'SEO & Référencement Google 2025', mentor:'Yassine Karoui', type:'online', location:'', duration:'5 semaines', sessions:10, date:'2025-05-25', cost:'240 TND', desc:'Boostez votre visibilité sur Google avec les techniques SEO actuelles.'},
+];
+
+let enrollments = [];
+let currentCatFilter = 'all';
+let editCatId = null;
+let editFormId = null;
+let deleteType = null;
+let deleteId = null;
+let currentEnrollFormationId = null;
+
+// Color cycle for categories
+const colorCycle = ['cat-color-1','cat-color-2','cat-color-3','cat-color-4','cat-color-5','cat-color-6'];
+let colorIdx = categories.length % colorCycle.length;
+
+// ===================== HELPERS =====================
+function nextId(arr){ return arr.length ? Math.max(...arr.map(x=>x.id))+1 : 1; }
+function getCat(id){ return categories.find(c=>c.id===id); }
+function getFormsByCat(catId){ return catId==='all'?formations:formations.filter(f=>f.catId===catId); }
+
+function showToast(msg, type='success'){
+  const t = document.getElementById('toast');
+  t.textContent = (type==='success'?'✓ ':type==='error'?'✕ ':'ℹ ')+msg;
+  t.className = 'toast '+type+' show';
+  setTimeout(()=>t.className='toast',2800);
+}
+
+// ===================== VIEW SWITCH =====================
+function switchView(v){
+  document.getElementById('view-front').style.display = v==='front'?'block':'none';
+  document.getElementById('view-back').style.display = v==='back'?'flex':'none';
+  if(v==='back') refreshBackDashboard();
+  if(v==='front') renderFront();
+}
+
+// ===================== FRONT END =====================
+function renderFront(){
+  renderCategoryTabs();
+  renderFormationCards(currentCatFilter);
+  updateHeroStats();
+}
+
+function updateHeroStats(){
+  document.getElementById('stat-formations').textContent = formations.length;
+  const mentors = [...new Set(formations.map(f=>f.mentor))];
+  document.getElementById('stat-mentors').textContent = mentors.length;
+  document.getElementById('stat-enrolled').textContent = enrollments.length;
+}
+
+function renderCategoryTabs(){
+  const container = document.getElementById('categoryTabs');
+  container.innerHTML = '';
+  // All tab
+  const allBtn = document.createElement('button');
+  allBtn.className = 'cat-tab'+(currentCatFilter==='all'?' active':'');
+  allBtn.setAttribute('data-cat','all');
+  allBtn.innerHTML = `<span class="cat-icon">🗂️</span> Tout voir <span class="cat-count">${formations.length}</span>`;
+  allBtn.onclick = ()=>filterCategory('all',allBtn);
+  container.appendChild(allBtn);
+  // Category tabs
+  categories.forEach(cat=>{
+    const cnt = formations.filter(f=>f.catId===cat.id).length;
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab'+(currentCatFilter===cat.id?' active':'');
+    btn.setAttribute('data-cat',cat.id);
+    btn.innerHTML = `<span class="cat-icon">${cat.icon}</span> ${cat.name} <span class="cat-count">${cnt}</span>`;
+    btn.onclick = ()=>filterCategory(cat.id,btn);
+    container.appendChild(btn);
+  });
+}
+
+function filterCategory(catId, el){
+  currentCatFilter = catId;
+  document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderFormationCards(catId);
+}
+
+function renderFormationCards(catId){
+  const grid = document.getElementById('formationsGrid');
+  const list = catId==='all'?formations:formations.filter(f=>f.catId===catId);
+  if(!list.length){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">🎓</div><h3>Aucune formation dans cette catégorie</h3><p>Revenez bientôt ou explorez d'autres catégories.</p></div>`;
+    return;
+  }
+  const colorMap = {};
+  categories.forEach((c,i)=>colorMap[c.id]=colorCycle[i%colorCycle.length]);
+  grid.innerHTML = list.map(f=>{
+    const cat = getCat(f.catId);
+    const catColor = colorMap[f.catId]||'cat-color-1';
+    const isEnrolled = enrollments.some(e=>e.formId===f.id);
+    const initials = f.mentor.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const dateStr = f.date ? new Date(f.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'À définir';
+    const costDisplay = f.cost||'Gratuit';
+    const enrollBtn = isEnrolled
+      ? `<button class="overlay-enroll-btn enrolled" disabled>✓ Inscrit(e)</button>`
+      : `<button class="overlay-enroll-btn" onclick="openEnrollModal(${f.id},event)">S'inscrire →</button>`;
+    return `
+    <div class="formation-card">
+      <div class="card-img ${catColor}">
+        <span class="card-img-emoji">${cat?cat.icon:'🎓'}</span>
+        ${cat?`<span class="card-img-badge">${cat.icon} ${cat.name}</span>`:''}
+        <span class="card-img-type ${f.type==='online'?'online':'presential'}">${f.type==='online'?'🌐 En ligne':'📍 Présentiel'}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${f.title}</div>
+        <div class="card-mentor"><span class="card-mentor-avatar">${initials}</span> ${f.mentor}</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-price ${costDisplay==='Gratuit'?'free':''}">${costDisplay}</span>
+        <span class="card-sessions">📅 ${f.sessions||0} séances</span>
+      </div>
+      <!-- Hover overlay -->
+      <div class="card-hover-overlay">
+        <div class="overlay-info"><span class="overlay-info-icon">⏱️</span> Durée : ${f.duration||'N/A'}</div>
+        <div class="overlay-info"><span class="overlay-info-icon">${f.type==='online'?'🌐':'📍'}</span> ${f.type==='online'?'Formation en ligne':(f.location||'Lieu à définir')}</div>
+        <div class="overlay-info"><span class="overlay-info-icon">📚</span> ${f.sessions||0} séance(s)</div>
+        <div class="overlay-info"><span class="overlay-info-icon">👤</span> ${f.mentor}</div>
+        <div class="overlay-info"><span class="overlay-info-icon">📅</span> ${dateStr}</div>
+        ${enrollBtn}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== ENROLL MODAL =====================
+function openEnrollModal(formId, e){
+  if(e) e.stopPropagation();
+  currentEnrollFormationId = formId;
+  const f = formations.find(x=>x.id===formId);
+  document.getElementById('enrollFormTitle').textContent = f?f.title:'Formation';
+  document.getElementById('enrollFormWrap').style.display = 'block';
+  document.getElementById('enrollSuccessWrap').style.display = 'none';
+  document.getElementById('enrollName').value='';
+  document.getElementById('enrollPhone').value='';
+  document.getElementById('enrollEmail').value='';
+  document.getElementById('enrollModal').classList.add('active');
+}
+function closeEnrollModal(){
+  document.getElementById('enrollModal').classList.remove('active');
+}
+function confirmEnroll(){
+  const name = document.getElementById('enrollName').value.trim();
+  const phone = document.getElementById('enrollPhone').value.trim();
+  const email = document.getElementById('enrollEmail').value.trim();
+  if(!name||!phone||!email){showToast('Veuillez remplir tous les champs.','error');return;}
+  const f = formations.find(x=>x.id===currentEnrollFormationId);
+  enrollments.push({id:nextId(enrollments), formId:currentEnrollFormationId, name, phone, email, formTitle:f?f.title:'', date:new Date().toLocaleDateString('fr-FR')});
+  document.getElementById('successFormationName').textContent = f?f.title:'';
+  document.getElementById('enrollFormWrap').style.display='none';
+  document.getElementById('enrollSuccessWrap').style.display='block';
+  renderFormationCards(currentCatFilter);
+  updateHeroStats();
+  updateEnrollBadge();
+  showToast('Inscription confirmée avec succès !');
+}
+
+function updateEnrollBadge(){
+  document.getElementById('enroll-badge').textContent = enrollments.length;
+}
+
+// ===================== BACKOFFICE =====================
+function showBackSection(section, el){
+  ['dashboard','categories','formations','enrollments'].forEach(s=>{
+    document.getElementById('section-'+s).style.display = s===section?'block':'none';
+  });
+  document.querySelectorAll('.back-nav-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('back-section-name').textContent = el.textContent.trim();
+  if(section==='categories') renderCatTable();
+  if(section==='formations'){renderFormationsTable();populateFilterCatSelect();}
+  if(section==='enrollments') renderEnrollmentsTable();
+  if(section==='dashboard') refreshBackDashboard();
+}
+
+function refreshBackDashboard(){
+  document.getElementById('dash-total-formations').textContent = formations.length;
+  document.getElementById('dash-total-cats').textContent = categories.length;
+  document.getElementById('dash-total-enroll').textContent = enrollments.length;
+  document.getElementById('dash-online').textContent = formations.filter(f=>f.type==='online').length;
+}
+
+// --- CATEGORIES TABLE ---
+function renderCatTable(){
+  document.getElementById('cat-count-label').textContent = categories.length+' catégorie(s)';
+  const tbody = document.getElementById('catTableBody');
+  tbody.innerHTML = categories.map(cat=>{
+    const cnt = formations.filter(f=>f.catId===cat.id).length;
+    return `<tr>
+      <td><input type="checkbox" class="back-table-checkbox"></td>
+      <td><strong style="font-family:'Nunito',sans-serif;color:var(--navy)">${cat.name}</strong><br><small style="color:var(--gray-400)">${cat.desc||''}</small></td>
+      <td style="font-size:1.3rem">${cat.icon}</td>
+      <td><span class="badge badge-blue">${cnt} formation(s)</span></td>
+      <td><span class="badge badge-green">● Actif</span></td>
+      <td>
+        <div class="action-btns">
+          <button class="action-btn" onclick="openCatModal(${cat.id})" title="Modifier">✏️</button>
+          <button class="action-btn delete" onclick="openDeleteModal('cat',${cat.id},'${cat.name.replace(/'/g,"\\'")}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:30px">Aucune catégorie. Créez-en une.</td></tr>`;
+}
+
+function openCatModal(id){
+  editCatId = id||null;
+  document.getElementById('catModalTitle').textContent = id?'Modifier la catégorie':'Nouvelle catégorie';
+  if(id){
+    const c = categories.find(x=>x.id===id);
+    document.getElementById('catName').value = c.name;
+    document.getElementById('catIcon').value = c.icon;
+    document.getElementById('catDesc').value = c.desc||'';
+  } else {
+    document.getElementById('catName').value='';
+    document.getElementById('catIcon').value='';
+    document.getElementById('catDesc').value='';
+  }
+  document.getElementById('catModal').classList.add('active');
+}
+function closeCatModal(){ document.getElementById('catModal').classList.remove('active'); }
+function saveCat(){
+  const name = document.getElementById('catName').value.trim();
+  if(!name){showToast('Le nom est requis.','error');return;}
+  if(editCatId){
+    const c = categories.find(x=>x.id===editCatId);
+    c.name=name; c.icon=document.getElementById('catIcon').value||'📂'; c.desc=document.getElementById('catDesc').value;
+    showToast('Catégorie modifiée avec succès.');
+  } else {
+    const col = colorCycle[colorIdx%colorCycle.length]; colorIdx++;
+    categories.push({id:nextId(categories),name,icon:document.getElementById('catIcon').value||'📂',desc:document.getElementById('catDesc').value,color:col});
+    showToast('Catégorie créée avec succès.');
+  }
+  closeCatModal();
+  renderCatTable();
+  populateFilterCatSelect();
+  renderFront();
+}
+
+// --- FORMATIONS TABLE ---
+function populateFilterCatSelect(){
+  const sel = document.getElementById('filterCatSelect');
+  const current = sel.value;
+  sel.innerHTML = '<option value="all">Toutes les catégories</option>' +
+    categories.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  sel.value = current;
+}
+
+function renderFormationsTable(){
+  const filter = document.getElementById('filterCatSelect')?.value||'all';
+  const list = filter==='all'?formations:formations.filter(f=>f.catId==filter);
+  document.getElementById('form-count-label').textContent = list.length+' formation(s)';
+  const tbody = document.getElementById('formTableBody');
+  tbody.innerHTML = list.map(f=>{
+    const cat = getCat(f.catId);
+    return `<tr>
+      <td><input type="checkbox" class="back-table-checkbox"></td>
+      <td><div class="enroll-course">${f.title}</div><div class="enroll-date">${f.date||''}</div></td>
+      <td><span class="badge badge-blue">${cat?cat.icon+' '+cat.name:'—'}</span></td>
+      <td>${f.mentor}</td>
+      <td><span class="badge ${f.type==='online'?'badge-green':'badge-orange'}">${f.type==='online'?'🌐 En ligne':'📍 Présentiel'}</span></td>
+      <td>${f.duration||'—'}</td>
+      <td><strong style="color:var(--blue)">${f.cost||'Gratuit'}</strong></td>
+      <td>
+        <div class="action-btns">
+          <button class="action-btn" onclick="openFormModal(${f.id})">✏️</button>
+          <button class="action-btn delete" onclick="openDeleteModal('form',${f.id},'${f.title.replace(/'/g,"\\'")}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="8" style="text-align:center;color:var(--gray-400);padding:30px">Aucune formation.</td></tr>`;
+}
+
+function openFormModal(id){
+  editFormId = id||null;
+  // Populate cat select
+  const catSel = document.getElementById('fCat');
+  catSel.innerHTML = categories.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  document.getElementById('formModalTitle').textContent = id?'Modifier la formation':'Nouvelle formation';
+  if(id){
+    const f = formations.find(x=>x.id===id);
+    document.getElementById('fTitle').value=f.title;
+    catSel.value=f.catId;
+    document.getElementById('fMentor').value=f.mentor;
+    document.getElementById('fType').value=f.type;
+    document.getElementById('fLocation').value=f.location||'';
+    document.getElementById('fDuration').value=f.duration||'';
+    document.getElementById('fSessions').value=f.sessions||'';
+    document.getElementById('fDate').value=f.date||'';
+    document.getElementById('fCost').value=f.cost||'';
+    document.getElementById('fDesc').value=f.desc||'';
+  } else {
+    ['fTitle','fMentor','fLocation','fDuration','fSessions','fDate','fCost','fDesc'].forEach(id=>document.getElementById(id).value='');
+  }
+  document.getElementById('formModal').classList.add('active');
+}
+function closeFormModal(){ document.getElementById('formModal').classList.remove('active'); }
+function saveFormation(){
+  const title = document.getElementById('fTitle').value.trim();
+  const catId = parseInt(document.getElementById('fCat').value);
+  const mentor = document.getElementById('fMentor').value.trim();
+  if(!title||!mentor){showToast('Titre et mentor sont requis.','error');return;}
+  const data = {
+    catId, title, mentor,
+    type: document.getElementById('fType').value,
+    location: document.getElementById('fLocation').value.trim(),
+    duration: document.getElementById('fDuration').value.trim(),
+    sessions: parseInt(document.getElementById('fSessions').value)||0,
+    date: document.getElementById('fDate').value,
+    cost: document.getElementById('fCost').value.trim()||'Gratuit',
+    desc: document.getElementById('fDesc').value.trim(),
+  };
+  if(editFormId){
+    const f = formations.find(x=>x.id===editFormId);
+    Object.assign(f,data);
+    showToast('Formation modifiée avec succès.');
+  } else {
+    formations.push({id:nextId(formations),...data});
+    showToast('Formation créée avec succès.');
+  }
+  closeFormModal();
+  renderFormationsTable();
+  renderFront();
+}
+
+// --- ENROLLMENTS TABLE ---
+function renderEnrollmentsTable(){
+  document.getElementById('enroll-count-label').textContent = enrollments.length+' inscription(s)';
+  const tbody = document.getElementById('enrollTableBody');
+  tbody.innerHTML = enrollments.map((e,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><strong>${e.name}</strong></td>
+    <td>${e.email}</td>
+    <td>${e.phone}</td>
+    <td><div class="enroll-course">${e.formTitle}</div></td>
+    <td><div class="enroll-date">${e.date}</div></td>
+    <td><div class="action-btns"><button class="action-btn delete" onclick="openDeleteModal('enroll',${e.id},'${e.name.replace(/'/g,"\\'")}')">🗑️</button></div></td>
+  </tr>`).join('')||`<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:30px">Aucune inscription pour l'instant.</td></tr>`;
+}
+
+// --- DELETE MODAL ---
+function openDeleteModal(type,id,name){
+  deleteType=type; deleteId=id;
+  document.getElementById('deleteItemName').textContent=`"${name}"`;
+  document.getElementById('deleteModal').classList.add('active');
+}
+function closeDeleteModal(){ document.getElementById('deleteModal').classList.remove('active'); }
+function confirmDelete(){
+  if(deleteType==='cat'){
+    // remove cat and its formations
+    formations = formations.filter(f=>f.catId!==deleteId);
+    categories = categories.filter(c=>c.id!==deleteId);
+    renderCatTable();
+    renderFront();
+    showToast('Catégorie supprimée.');
+  } else if(deleteType==='form'){
+    formations = formations.filter(f=>f.id!==deleteId);
+    renderFormationsTable();
+    renderFront();
+    showToast('Formation supprimée.');
+  } else if(deleteType==='enroll'){
+    enrollments = enrollments.filter(e=>e.id!==deleteId);
+    renderEnrollmentsTable();
+    updateEnrollBadge();
+    showToast('Inscription supprimée.');
+  }
+  closeDeleteModal();
+}
+
+// --- BACK SEARCH (basic filter on categories/formations) ---
+function backSearch(val){
+  // simple highlight logic could go here
+}
+
+// --- CLOSE MODALS ON BG CLICK ---
+['enrollModal','catModal','formModal','deleteModal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', function(e){
+    if(e.target===this) this.classList.remove('active');
+  });
+});
+
+// ===================== INIT =====================
+renderFront();
+updateEnrollBadge();
+renderCatTable();
+</script>
+</body>
+</html>
