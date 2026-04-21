@@ -155,7 +155,7 @@ if (\ === 'edit' && isset(\['id'])) {
         <p class="page-subtitle">Gérez le catalogue de vos cours en ligne.</p>
       </div>
       <?php if (\ === 'list'): ?>
-        <a href="posts.php?action=add" class="btn"><i class="fas fa-plus"></i> Nouvelle Formation</a>
+        <a href="posts.php?action=add" class="btn"><i class="fas fa-plus"></i> Nouvelle Publication</a>
       <?php endif; ?>
     </div>
 

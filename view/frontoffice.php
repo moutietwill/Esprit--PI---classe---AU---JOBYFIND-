@@ -253,6 +253,6 @@ $selectedCategory = isset($_GET['category']) ? $_GET['category'] : 'Tous';
     <!-- SEARCH FORM VALIDATION -->
     <!-- ═════════════════════════════════════════════ -->
 
-    <script src="assets/js/validation.js"></script>
+    <script src="assets/js/validation.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

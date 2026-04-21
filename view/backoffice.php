@@ -55,7 +55,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 // Données Globales
 $categoriesList = $catController->getCategories();
-$postsList = $blogController->AfficherPosts();
+
+$catId = isset($_GET['cat_id']) ? $_GET['cat_id'] : '';
+$sort = isset($_GET['sort']) ? $_GET['sort'] : '';
+$order = isset($_GET['order']) ? $_GET['order'] : 'ASC';
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+
+if (!empty($search)) {
+    $postsList = $blogController->RecherchePost($search);
+} elseif (!empty($catId)) {
+    $postsList = $blogController->RechercheParCategorie($catId);
+} elseif (!empty($sort)) {
+    $postsList = $blogController->TrierPosts($sort, $order);
+} else {
+    $postsList = $blogController->AfficherPosts();
+}
 $action = isset($_GET['action']) ? $_GET['action'] : 'list';
 ?>
 <!DOCTYPE html>
@@ -329,7 +343,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'list';
           <p class="page-subtitle">Gérez le catalogue de vos cours en ligne.</p>
         </div>
         <?php if ($action === 'list'): ?>
-          <a href="backoffice.php?page=posts&action=add" class="btn"><i class="fas fa-plus"></i> Nouvelle Formation</a>
+          <a href="backoffice.php?page=posts&action=add" class="btn"><i class="fas fa-plus"></i> Nouvelle Publication</a>
         <?php endif; ?>
       </div>
 
@@ -405,7 +419,35 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'list';
 
       <?php else: ?>
           <div class="table-section">
-              <div class="table-header">Toutes les blogs</div>
+              <div class="table-header" style="flex-wrap: wrap; gap: 15px;">
+                  <div>Toutes les blogs</div>
+                  <form method="GET" action="backoffice.php" style="display: flex; gap: 10px; align-items: center; font-size: 13px;">
+                      <input type="hidden" name="page" value="posts">
+                      
+                      <input type="text" name="search" placeholder="Rechercher par nom..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>" style="padding: 8px; border-radius: 6px; border: 1px solid var(--border); outline: none;">
+                      
+                      <select name="cat_id" style="padding: 8px; border-radius: 6px; border: 1px solid var(--border); outline: none;">
+                          <option value="">Toutes les catégories</option>
+                          <?php foreach($categoriesList as $c): ?>
+                              <option value="<?= $c['id'] ?>" <?= (isset($_GET['cat_id']) && $_GET['cat_id'] == $c['id']) ? 'selected' : '' ?>><?= htmlspecialchars($c['name']) ?></option>
+                          <?php endforeach; ?>
+                      </select>
+
+                      <select name="sort" style="padding: 8px; border-radius: 6px; border: 1px solid var(--border); outline: none;">
+                          <option value="">Trier par...</option>
+                          <option value="title" <?= (isset($_GET['sort']) && $_GET['sort'] == 'title') ? 'selected' : '' ?>>Titre</option>
+                          <option value="created_at" <?= (isset($_GET['sort']) && $_GET['sort'] == 'created_at') ? 'selected' : '' ?>>Date</option>
+                      </select>
+
+                      <select name="order" style="padding: 8px; border-radius: 6px; border: 1px solid var(--border); outline: none;">
+                          <option value="ASC" <?= (isset($_GET['order']) && $_GET['order'] == 'ASC') ? 'selected' : '' ?>>↑ Croissant</option>
+                          <option value="DESC" <?= (isset($_GET['order']) && $_GET['order'] == 'DESC') ? 'selected' : '' ?>>↓ Décroissant</option>
+                      </select>
+
+                      <button type="submit" class="btn" style="padding: 8px 14px;"><i class="fas fa-search"></i> Filtrer</button>
+                      <a href="backoffice.php?page=posts" class="btn btn-light" style="padding: 8px 14px;" title="Réinitialiser"><i class="fas fa-sync-alt"></i></a>
+                  </form>
+              </div>
               <table>
                   <thead>
                       <tr>

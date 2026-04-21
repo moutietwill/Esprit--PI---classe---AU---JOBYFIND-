@@ -235,6 +235,45 @@ class BlogController {
     }
 
     /**
+     * Recherche des posts par catégorie
+     */
+    function RechercheParCategorie($categoryId) {
+        $sql = "SELECT * FROM posts 
+                WHERE category_id = :category_id
+                ORDER BY created_at DESC";
+        $db = Config::GetConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([':category_id' => $categoryId]);
+            return $query->fetchAll();
+        } catch (Exception $e) {
+            throw new Exception('Erreur: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Trier les posts
+     */
+    function TrierPosts($critere, $ordre = 'ASC') {
+        $criteresAutorises = ['title', 'created_at', 'category', 'status'];
+        if (!in_array($critere, $criteresAutorises)) {
+            $critere = 'created_at';
+        }
+        
+        $ordre = strtoupper($ordre) === 'DESC' ? 'DESC' : 'ASC';
+
+        $sql = "SELECT * FROM posts ORDER BY $critere $ordre";
+        $db = Config::GetConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute();
+            return $query->fetchAll();
+        } catch (Exception $e) {
+            throw new Exception('Erreur: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Affiche les posts publiés seulement
      */
     function AfficherPublies() {

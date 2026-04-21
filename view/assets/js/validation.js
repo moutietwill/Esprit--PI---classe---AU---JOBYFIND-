@@ -291,14 +291,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
         searchForm.addEventListener('submit', function (e) {
-            const searchBar = document.getElementById('searchBar');
+            const searchBar = document.getElementById('searchInput');
             const searchError = document.getElementById('searchError');
             let isValid = true;
 
             searchError.style.display = 'none';
-            searchBar.style.border = '1px solid #e2e8f0'; // assuming normal border is e2e8f0
+            if (searchBar) searchBar.style.border = '1px solid #e2e8f0'; // assuming normal border is e2e8f0
 
-            if (searchBar.value.trim().length === 0) {
+            if (!searchBar || searchBar.value.trim().length === 0) {
                 searchError.textContent = "Veuillez entrer un mot-clé pour chercher.";
                 searchError.style.display = 'block';
                 searchBar.style.border = '1px solid red';
@@ -313,10 +313,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 searchError.style.display = 'block';
                 searchBar.style.border = '1px solid red';
                 isValid = false;
-            } else if (!/^[a-zA-Z0-9\s\-]+$/.test(searchBar.value.trim())) {
+            } else if (!/^[a-zA-Z0-9\s\-À-ÿ]+$/.test(searchBar.value.trim())) {
                 searchError.textContent = "Seuls les lettres, chiffres, espaces et tirets sont autorisés.";
                 searchError.style.display = 'block';
-                searchBar.style.border = '1px solid red';
+                if (searchBar) searchBar.style.border = '1px solid red';
                 isValid = false;
             }
 
@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        const searchB = document.getElementById('searchBar');
+        const searchB = document.getElementById('searchInput');
         if (searchB) {
             searchB.addEventListener('input', function () {
                 document.getElementById('searchError').style.display = 'none';
@@ -335,11 +335,60 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
+// Frontoffice: Likes (global function)
+function toggleLike(btn, postId) {
+    btn.disabled = true;
+
+    fetch('../ajax_toggle_like.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ post_id: postId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        if (data.success) {
+            // Update button UI
+            if (data.liked) {
+                btn.classList.add('liked');
+                btn.querySelector('i').classList.remove('far');
+                btn.querySelector('i').classList.add('fas');
+            } else {
+                btn.classList.remove('liked');
+                btn.querySelector('i').classList.remove('fas');
+                btn.querySelector('i').classList.add('far');
+            }
+            // Update count
+            btn.querySelector('.engagement-count').textContent = data.count;
+        } else {
+            console.error("Erreur toggleLike: ", data.message);
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        console.error('Erreur fetch toggleLike:', error);
+        alert('Erreur de connexion au serveur (Like).');
+    });
+}
+
+// Frontoffice: Toggle comments visibility (global function)
+function toggleComments(btn, postId) {
+    const commentsSection = document.getElementById(`comments-${postId}`);
+    if (commentsSection) {
+        commentsSection.classList.toggle('show');
+    }
+}
+
 // Frontoffice: Submit comments (global function)
-function submitComment(button, postId) {
-    const input = document.getElementById(`commentInput-${postId}`);
+function submitComment(event, inputElement, postId) {
+    // Only submit on Enter key
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+
     const errDiv = document.getElementById(`commentError-${postId}`);
-    const content = input.value.trim();
+    const content = inputElement.value.trim();
 
     errDiv.style.display = 'none';
 
@@ -365,11 +414,12 @@ function submitComment(button, postId) {
         return;
     }
 
-    button.disabled = true;
+    inputElement.disabled = true;
 
     const formData = new FormData();
     formData.append('post_id', postId);
     formData.append('content', content);
+    formData.append('user_name', 'Vous'); // Using "Vous" as author name for frontend display
 
     fetch('../ajax_add_comment.php', {
         method: 'POST',
@@ -377,31 +427,51 @@ function submitComment(button, postId) {
     })
         .then(response => response.json())
         .then(data => {
-            button.disabled = false;
+            inputElement.disabled = false;
             if (data.success) {
-                input.value = '';
+                inputElement.value = '';
 
-                const commentsList = document.getElementById(`comments-${postId}`).querySelector('.comments-list');
-                if (commentsList.innerHTML.includes('Soyez le premier')) {
-                    commentsList.innerHTML = '';
+                const commentsList = document.getElementById(`comments-list-${postId}`);
+                
+                // Remove 'Aucun commentaire' message if present
+                const noCommentMsg = commentsList.querySelector('.no-comment-msg');
+                if (noCommentMsg) {
+                    noCommentMsg.remove();
                 }
 
+                // Add new comment to DOM
                 const newComment = document.createElement('div');
-                newComment.className = 'comment';
+                newComment.className = 'comment-item';
                 newComment.innerHTML = `
-                <div class="comment-author">Vous <span class="comment-date">À l'instant</span></div>
-                <div class="comment-content">${escapeHtml(content)}</div>
-            `;
+                    <div class="comment-text">
+                        <strong style="color: var(--primary);">${escapeHtml(data.comment.author)}</strong>
+                        <br>
+                        <small style="color: var(--text-secondary);">${escapeHtml(data.comment.timestamp)}</small>
+                        <br>
+                        ${escapeHtml(data.comment.text)}
+                    </div>
+                `;
                 commentsList.appendChild(newComment);
+                
+                // Increment comment count on the button
+                const commentBtn = document.querySelector(`button.comment-btn[onclick*="toggleComments(this, ${postId})"]`);
+                if (commentBtn) {
+                    const countSpan = commentBtn.querySelector('.engagement-count');
+                    if (countSpan) {
+                        countSpan.textContent = parseInt(countSpan.textContent || '0') + 1;
+                    }
+                }
             } else {
                 errDiv.textContent = "Erreur: " + data.message;
                 errDiv.style.display = 'block';
             }
         })
         .catch(error => {
-            button.disabled = false;
-            errDiv.textContent = "Une erreur est survenue lors de l'envoi.";
+            inputElement.disabled = false;
+            errDiv.textContent = "Erreur de connexion au serveur.";
             errDiv.style.display = 'block';
+            console.error('Erreur fetch addComment:', error);
+            alert('Erreur de connexion au serveur (Commentaire).');
         });
 }
 
