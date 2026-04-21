@@ -526,6 +526,10 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
       <i class="fa-solid fa-calendar-days"></i>
       <span>Événements</span>
     </a>
+    <a href="/projetweb_avec_evenements/public/index.php/admin/inscriptions" class="sidebar-link">
+      <i class="fa-solid fa-clipboard"></i>
+      <span>Inscriptions</span>
+    </a>
   </div>
   <div class="sidebar-footer">
     <div class="admin-profile">

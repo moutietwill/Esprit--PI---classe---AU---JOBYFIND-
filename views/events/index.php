@@ -100,6 +100,20 @@
       color: #fff;
     }
     .btn-primary:hover { background: #1a66f0; }
+    .btn-secondary {
+      background: var(--border);
+      color: var(--text);
+      border: none;
+      transition: background .2s;
+    }
+    .btn-secondary:hover { background: #d1d5db; }
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      transition: background .2s;
+    }
+    .btn-danger:hover { background: #dc2626; }
 
     .hero {
       background: linear-gradient(135deg, var(--navy) 0%, #1a3a7a 100%);
@@ -268,70 +282,81 @@
     }
 
     .content {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 28px auto 60px;
       padding: 0 20px;
       display: grid;
-      grid-template-columns: 1fr 300px;
+      grid-template-columns: 1fr 280px;
       gap: 28px;
       align-items: start;
     }
 
-    .events-grid { display: flex; flex-direction: column; gap: 18px; }
+    .events-grid { 
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
 
     .event-card {
       background: #fff;
       border-radius: 14px;
       border: 1px solid var(--border);
-      display: flex;
-      gap: 0;
       overflow: hidden;
-      transition: box-shadow .2s, transform .2s;
+      transition: box-shadow .3s, transform .3s;
       cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
     .event-card:hover {
-      box-shadow: 0 6px 28px rgba(11,31,75,.1);
-      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(11,31,75,.15);
+      transform: translateY(-4px);
     }
 
-    .event-card-date {
-      min-width: 80px;
+    .event-card-image {
+      width: 100%;
+      height: 180px;
+      background: linear-gradient(135deg, var(--navy) 0%, #1a3a7a 100%);
+      object-fit: cover;
+      display: block;
+    }
+
+    .event-card-date-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
       background: var(--navy);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 20px 12px;
-      gap: 2px;
+      line-height: 1.2;
     }
-    .event-card-date .day {
-      font-family: "DM Serif Display", serif;
-      font-size: 30px;
-      color: #fff;
-      line-height: 1;
+    .event-card-date-badge .day {
+      font-size: 16px;
+      font-weight: 700;
     }
-    .event-card-date .month {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      color: #7aabff;
-    }
-    .event-card-date .year {
-      font-size: 11px;
-      color: rgba(255,255,255,.4);
+    .event-card-date-badge .month {
+      font-size: 10px;
+      opacity: .8;
     }
 
     .event-card-body {
       flex: 1;
-      padding: 18px 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
     }
     .event-card-top {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .event-card-title {
       font-size: 16px;
@@ -358,10 +383,10 @@
     .event-card-meta {
       display: flex;
       align-items: center;
-      gap: 18px;
+      gap: 12px;
       font-size: 12.5px;
       color: var(--muted);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
     .event-card-meta span {
@@ -372,18 +397,21 @@
     .event-card-desc {
       font-size: 13.5px;
       color: #6b7280;
-      line-height: 1.55;
+      line-height: 1.5;
       margin-bottom: 14px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      flex-grow: 1;
     }
     .event-card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
     }
     .event-organizer {
       display: flex;
@@ -772,12 +800,64 @@
       margin-top: auto;
     }
     footer a { color: #7aabff; text-decoration: none; }
+
+    @media (max-width: 1024px) {
+      .content {
+        grid-template-columns: 1fr;
+      }
+      .events-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .events-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .event-card-title {
+        font-size: 15px;
+      }
+      .filters-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .sort-select {
+        width: 100%;
+        margin-left: 0;
+      }
+      nav {
+        padding: 0 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .events-grid {
+        grid-template-columns: 1fr;
+      }
+      .search-bar {
+        flex-wrap: wrap;
+      }
+      .search-bar input {
+        width: 100%;
+        order: 1;
+      }
+      .search-bar .search-btn {
+        order: 3;
+        width: 100%;
+      }
+      .event-card-image {
+        height: 150px;
+      }
+    }
   </style>
 </head>
 <body>
 
 <?php
 $events = $events ?? [];
+$inscriptionsCount = $inscriptionsCount ?? 0;
 $basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
 $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
 ?>
@@ -797,8 +877,7 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
   <p>Conférences, ateliers, hackathons, salons… Restez connecté à l'écosystème professionnel tunisien.</p>
   <div class="hero-stats">
     <div class="hero-stat"><div class="num"><?php echo count($events); ?></div><div class="lbl">Événements</div></div>
-    <div class="hero-stat"><div class="num">12</div><div class="lbl">Villes</div></div>
-    <div class="hero-stat"><div class="num">0+</div><div class="lbl">Participants</div></div>
+        <div class="hero-stat"><div class="num"><?php echo (int) $inscriptionsCount; ?></div><div class="lbl">Participants</div></div>
   </div>
 </section>
 
@@ -837,36 +916,37 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
         $lieu = $event->getLieu();
         $organisateurId = $event->getIdOrganisateur();
         $description = $event->getDescription();
+        $image = $event->getImage() ?: 'assets/images/event/default-event.jpg';
         $titreSlug = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
         $organisateurLabel = $organisateurId ? 'Organisateur #' . $organisateurId : 'Organisateur inconnu';
       ?>
       <div class="event-card" onclick="viewEventDetails(<?php echo $event->getId(); ?>)">
-        <div class="event-card-date">
-          <div class="day"><?php echo date('d', strtotime($date)); ?></div>
-          <div class="month"><?php echo date('M', strtotime($date)); ?></div>
-          <div class="year"><?php echo date('Y', strtotime($date)); ?></div>
+        <div style="position: relative;">
+          <img src="/projetweb_avec_evenements/public/<?php echo htmlspecialchars($image, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo $titreSlug; ?>" class="event-card-image" onerror="this.src='/projetweb_avec_evenements/public/assets/images/event/default-event.jpg'">
+          <div class="event-card-date-badge">
+            <div class="day"><?php echo date('d', strtotime($date)); ?></div>
+            <div class="month"><?php echo date('M', strtotime($date)); ?></div>
+          </div>
         </div>
         <div class="event-card-body">
           <div class="event-card-top">
-            <div class="event-card-title"><?php echo $titreSlug; ?></div>
-            <span class="event-badge badge-general">Général</span>
+            <div>
+              <div class="event-card-title"><?php echo $titreSlug; ?></div>
+              <span class="event-badge badge-tech">Général</span>
+            </div>
           </div>
           <div class="event-card-meta">
-            <span><i class="fa fa-clock"></i> --:--</span>
             <span><i class="fa fa-location-dot"></i> <?php echo htmlspecialchars($lieu, ENT_QUOTES, 'UTF-8'); ?></span>
           </div>
-          <p class="event-card-desc"><?php echo htmlspecialchars(substr($description, 0, 100), ENT_QUOTES, 'UTF-8'); ?>...</p>
+          <p class="event-card-desc"><?php echo htmlspecialchars(substr($description, 0, 85), ENT_QUOTES, 'UTF-8'); ?></p>
           <div class="event-card-footer">
             <div class="event-organizer">
               <div class="org-avatar"><?php echo strtoupper(substr($organisateurLabel, 0, 2)); ?></div>
-              <div><?php echo htmlspecialchars($organisateurLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+              <span><?php echo htmlspecialchars($organisateurLabel, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
-            <div class="capacity-wrap">
-              <div class="capacity-bar">
-                <div class="capacity-fill" style="width: 0%;"></div>
-              </div>
-              <span>0/0</span>
-            </div>
+            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openInscriptionModalWithEvent(<?php echo $event->getId(); ?>)" title="S'inscrire">
+              <i class="fa fa-plus"></i> S'inscrire
+            </button>
           </div>
         </div>
       </div>
@@ -935,27 +1015,25 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
       <div class="event-summary" id="event-summary">
         <div class="es-title" id="event-title"></div>
         <div class="es-meta">
-          <span><i class="fa fa-clock"></i> <span id="event-date-time"></span></span>
+          <span><i class="fa fa-calendar"></i> <span id="event-date-time"></span></span>
           <span><i class="fa fa-location-dot"></i> <span id="event-location"></span></span>
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Prénom</label>
+        <label class="form-label">Prénom *</label>
         <input type="text" class="form-control" id="firstname" placeholder="Jean">
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Nom</label>
-          <input type="text" class="form-control" id="lastname" placeholder="Dupont">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="text" class="form-control" id="email" placeholder="jean@example.com">
-        </div>
+      <div class="form-group">
+        <label class="form-label">Nom *</label>
+        <input type="text" class="form-control" id="lastname" placeholder="Dupont">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email *</label>
+        <input type="email" class="form-control" id="email" placeholder="jean@email.com">
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('inscription-modal')">Annuler</button>
+      <button class="btn btn-secondary" onclick="closeModal('inscription-modal')">Annuler</button>
       <button class="btn btn-primary" onclick="submitInscription()">S'inscrire</button>
     </div>
   </div>
@@ -1012,6 +1090,24 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
 
   let currentFilter = 'all';
   let currentEventForModal = null;
+  let currentEventIdForInscription = null;
+
+  function openInscriptionModalWithEvent(eventId) {
+    const event = allEvens.find(e => e.id === eventId);
+    if (!event) return;
+    
+    currentEventIdForInscription = eventId;
+    document.getElementById('event-title').textContent = event.titre;
+    document.getElementById('event-date-time').textContent = `${event.date} à ${event.heure || '--:--'}`;
+    document.getElementById('event-location').textContent = event.lieu;
+    
+    // Reset form
+    document.getElementById('firstname').value = '';
+    document.getElementById('lastname').value = '';
+    document.getElementById('email').value = '';
+    
+    openModal('inscription-modal');
+  }
 
   function setFilter(elem, filter) {
     document.querySelectorAll('.filter-chip, .cat-item').forEach(e => e.classList.remove('active'));
@@ -1057,11 +1153,10 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
               <div class="org-avatar">${e.organisateur.substring(0, 2).toUpperCase()}</div>
               <div>${e.organisateur}</div>
             </div>
-            <div class="capacity-wrap">
-              <div class="capacity-bar">
-                <div class="capacity-fill ${e.inscrits >= e.max ? 'full' : (e.inscrits >= e.max * 0.8 ? 'high' : '')}" style="width: ${Math.min(100, (e.inscrits / e.max) * 100)}%"></div>
-              </div>
-              <span>${e.inscrits}/${e.max}</span>
+            <div class="event-actions">
+              <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openInscriptionModalWithEvent(${e.id})" title="S'inscrire">
+                <i class="fa fa-plus"></i> S'inscrire
+              </button>
             </div>
           </div>
         </div>
@@ -1089,30 +1184,43 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
     openModal('detail-modal');
   }
 
-  function inscribeToEvent() {
-    if (!currentEventForModal) return;
-    document.getElementById('event-title').textContent = currentEventForModal.titre;
-    document.getElementById('event-date-time').textContent = `${currentEventForModal.date} à ${currentEventForModal.heure}`;
-    document.getElementById('event-location').textContent = currentEventForModal.lieu;
-    closeModal('detail-modal');
-    openModal('inscription-modal');
-  }
-
   function submitInscription() {
-    const firstname = document.getElementById('firstname').value.trim();
-    const lastname = document.getElementById('lastname').value.trim();
-    const email = document.getElementById('email').value.trim();
+    const userIdSelect = document.getElementById('user-select').value;
+    let userId = userIdSelect ? parseInt(userIdSelect) : null;
     
-    if (!firstname || !lastname || !email) {
-      showToast('Veuillez remplir tous les champs.', 'error');
+    if (!userId) {
+      showToast('Veuillez sélectionner un utilisateur', 'error');
       return;
     }
-    
-    showToast(`Inscription confirmée pour ${firstname} ${lastname}!`, 'success');
-    closeModal('inscription-modal');
-    document.getElementById('firstname').value = '';
-    document.getElementById('lastname').value = '';
-    document.getElementById('email').value = '';
+
+    if (!currentEventIdForInscription) {
+      showToast('Erreur : événement non trouvé', 'error');
+      return;
+    }
+
+    // Call API to register
+    fetch('/projetweb_avec_evenements/public/index.php/inscriptions/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idUtilisateur: userId,
+        idEvenement: currentEventIdForInscription,
+        statut: 'Confirmée'
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast('✓ Inscription confirmée!', 'success');
+        closeModal('inscription-modal');
+      } else {
+        showToast('Erreur : ' + (data.error || 'Inscription échouée'), 'error');
+      }
+    })
+    .catch(e => {
+      console.error(e);
+      showToast('Erreur réseau : ' + e.message, 'error');
+    });
   }
 
   function openModal(id) {
@@ -1137,8 +1245,13 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
     });
   });
 
+  // Initialize
+  loadUsersDropdown();
   filterEvents();
 </script>
 
 </body>
 </html>
+
+
+

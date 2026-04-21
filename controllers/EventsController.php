@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Event.php';
 
 class EventsController extends Controller {
@@ -12,8 +11,18 @@ class EventsController extends Controller {
      * List all events (public view)
      */
     public function index() {
-        $events = Event::getAll();
-        $this->render('events/index', ['events' => $events]);
+        $events = $this->fetchAllEvents();
+        $users = $this->fetchAllUsers();
+        $db = $this->getEventDb();
+        $stmt = $db->prepare("SELECT COUNT(*) AS total FROM inscription");
+        $stmt->execute();
+        $inscriptionsCount = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+        $this->render('events/index', [
+            'events' => $events,
+            'users' => $users,
+            'inscriptionsCount' => $inscriptionsCount
+        ]);
     }
 
     /**
@@ -21,7 +30,7 @@ class EventsController extends Controller {
      */
     public function show($id) {
         try {
-            $event = Event::getById($id);
+            $event = $this->fetchEventById($id);
             if (!$event) {
                 $this->render('events/show', ['error' => 'Event not found']); // Fallback 404
                 return;
@@ -59,7 +68,7 @@ class EventsController extends Controller {
                 'idOrganisateur' => (int)($_POST['idOrganisateur'] ?? 0)
             ]);
 
-            $result = $event->save();
+            $result = $this->persistEvent($event);
 
             if ($result) {
                 $this->redirect('/events?success=1');
@@ -78,7 +87,7 @@ class EventsController extends Controller {
      */
     public function edit($id) {
         try {
-            $event = Event::getById($id);
+            $event = $this->fetchEventById($id);
             if (!$event) {
                 $this->redirect('/events?error=1&msg=Event not found');
                 return;
@@ -101,7 +110,7 @@ class EventsController extends Controller {
                  die("Erreur : La description est obligatoire et doit avoir au moins 10 caracteres");
             }
 
-            $event = Event::getById($id);
+            $event = $this->fetchEventById($id);
 
             if (!$event) {
                 $this->redirect('/events?error=notfound');
@@ -114,7 +123,7 @@ class EventsController extends Controller {
             $event->setLieu($_POST['lieu']);
             $event->setIdOrganisateur((int)$_POST['idOrganisateur']);
 
-            $event->save();
+            $this->persistEvent($event);
 
             $this->redirect('/events?success=update');
         } catch (Exception $e) {
@@ -129,7 +138,7 @@ class EventsController extends Controller {
      */
     public function delete($id) {
         try {
-            $result = Event::delete($id);
+            $result = $this->removeEventRecord($id);
             
             if ($result) {
                 $this->redirect('/events?success=1&action=delete');
@@ -147,7 +156,7 @@ class EventsController extends Controller {
      */
     public function register($id) {
         try {
-            $event = Event::getById($id);
+            $event = $this->fetchEventById($id);
             if (!$event) {
                 $this->render('errors/404');
                 return;
@@ -164,7 +173,7 @@ class EventsController extends Controller {
      */
     public function storeRegistration($id) {
         try {
-            $event = Event::getById($id);
+            $event = $this->fetchEventById($id);
             if (!$event) {
                 $this->redirect('/events');
                 return;
@@ -195,7 +204,7 @@ class EventsController extends Controller {
      * Get all events (for API)
      */
     public function getEvents() {
-        return Event::getAll();
+        return $this->fetchAllEvents();
     }
 
     /**
@@ -205,7 +214,7 @@ class EventsController extends Controller {
         header('Content-Type: application/json');
 
         try {
-            $events = Event::search($term);
+            $events = $this->searchEventRecords($term);
             echo json_encode($events);
         } catch (Exception $e) {
             echo json_encode(['error' => $e->getMessage()]);
@@ -219,7 +228,7 @@ class EventsController extends Controller {
         header('Content-Type: application/json');
 
         try {
-            $events = Event::getByCategory($category);
+            $events = $this->fetchEventsByCategory($category);
             echo json_encode($events);
         } catch (Exception $e) {
             echo json_encode(['error' => $e->getMessage()]);

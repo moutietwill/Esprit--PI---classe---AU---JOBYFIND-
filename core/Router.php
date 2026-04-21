@@ -6,6 +6,7 @@ class Router
         '' => ['controller' => 'EventsController', 'action' => 'index'],
         'events' => ['controller' => 'EventsController', 'action' => 'index'],
         'admin' => ['controller' => 'AdminController', 'action' => 'index'],
+        'inscriptions' => ['controller' => 'InscriptionsController', 'action' => 'index'],
     ];
 
     public function dispatch(string $requestUri, string $scriptName): void

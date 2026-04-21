@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Event.php';
 require_once __DIR__ . '/../models/User.php';
 
@@ -59,8 +58,25 @@ class AdminController extends Controller {
      * Display events management page
      */
     public function events() {
-        $events = Event::getAll();
+        $events = $this->fetchAllEvents();
         $this->render('admin/events', ['events' => $events]);
+    }
+
+    /**
+     * Display inscriptions management page
+     */
+    public function inscriptions() {
+        require_once __DIR__ . '/../models/Inscription.php';
+        $inscriptions = Inscription::getAll();
+        $users = $this->fetchAllUsers();
+        $events = $this->fetchAllEvents();
+        $statuses = Inscription::getAllowedStatuses();
+        $this->render('admin/inscriptions', [
+            'inscriptions' => $inscriptions,
+            'users' => $users,
+            'events' => $events,
+            'statuses' => $statuses
+        ]);
     }
 
     /**
@@ -207,7 +223,7 @@ class AdminController extends Controller {
 
                 error_log('storeEvent: Creating event with data: ' . json_encode($event->toArray()));
 
-                $result = $event->save();
+                $result = $this->persistEvent($event);
                 
                 error_log('storeEvent: Result: ' . ($result ? 'Success ID=' . $result->getId() : 'Failed'));
 
@@ -255,7 +271,7 @@ class AdminController extends Controller {
             }
 
             try {
-                $event = Event::getById($id);
+                $event = $this->fetchEventById($id);
                 
                 if (!$event) {
                     $this->redirect('/admin/events?error=1&msg=Event not found');
@@ -276,7 +292,7 @@ class AdminController extends Controller {
                 $event->setLieu($_POST['lieu'] ?? '');
                 $event->setIdOrganisateur(isset($_POST['idOrganisateur']) ? (int)$_POST['idOrganisateur'] : null);
 
-                $result = $event->save();
+                $result = $this->persistEvent($event);
                 
                 if ($result) {
                     $this->redirect('/admin/events?success=1&action=update');
@@ -306,7 +322,7 @@ class AdminController extends Controller {
         }
 
         try {
-            $result = Event::delete($id);
+            $result = $this->removeEventRecord($id);
             
             if ($result) {
                 $this->redirect('/admin/events?success=1&action=delete');
@@ -414,7 +430,7 @@ class AdminController extends Controller {
         header('Content-Type: application/json');
 
         try {
-            $events = Event::getByCategory($category);
+            $events = $this->fetchEventsByCategory($category);
             echo json_encode($events);
         } catch (Exception $e) {
             echo json_encode(['error' => $e->getMessage()]);
@@ -428,7 +444,7 @@ class AdminController extends Controller {
         header('Content-Type: application/json');
 
         try {
-            $events = Event::search($term);
+            $events = $this->searchEventRecords($term);
             echo json_encode($events);
         } catch (Exception $e) {
             echo json_encode(['error' => $e->getMessage()]);
@@ -437,7 +453,7 @@ class AdminController extends Controller {
 
     // Legacy methods for backward compatibility
     public function getEvents() {
-        return Event::getAll();
+        return $this->fetchAllEvents();
     }
 
     public function getUsers() {
@@ -445,7 +461,7 @@ class AdminController extends Controller {
     }
 
     private function findEvent($id) {
-        return Event::getById($id);
+        return $this->fetchEventById($id);
     }
 
     private function findUser($id) {
