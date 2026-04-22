@@ -1,19 +1,18 @@
 <?php
-
-class Database {
+class config
+{
     private static $pdo = null;
 
-    public static function getConnection() {
+    public static function getConnexion()
+    {
         if (!isset(self::$pdo)) {
-            // Configuration for XAMPP (default credentials)
             $servername = "localhost";
             $username = "root";
             $password = "";
-            $dbname = "jobyfind";
-
+            $dbname = "jobyfind_database";
             try {
-                // Instanciation de PDO selon les consignes
-                self::$pdo = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8",
+                self::$pdo = new PDO(
+                    "mysql:host=$servername;dbname=$dbname",
                     $username,
                     $password,
                     [
@@ -21,9 +20,8 @@ class Database {
                         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
                     ]
                 );
-            } catch (PDOException $e) {
-                // Die en cas d'erreur de connexion
-                die('Erreur de connexion : ' . $e->getMessage());
+            } catch (Exception $e) {
+                die('Erreur: ' . $e->getMessage());
             }
         }
         return self::$pdo;

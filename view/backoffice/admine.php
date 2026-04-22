@@ -1,0 +1,472 @@
+<?php
+session_start();
+require_once(__DIR__ . '/../../Controller/UtilisateurController.php');
+require_once(__DIR__ . '/../../Controller/ProfileController.php');
+require_once(__DIR__ . '/../../Model/Utilisateur.php');
+require_once(__DIR__ . '/../../Model/Profile.php');
+
+
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
+    header('Location: ../frontoffice/signin.php');
+    exit();
+}
+
+$userController = new UtilisateurController();
+$profileController = new ProfileController();
+
+$message = "";
+$messageType = ""; 
+
+
+if (isset($_POST['delete_id'])) {
+    try {
+        $userController->deleteUser($_POST['delete_id']);
+        header('Location: admine.php?success=Utilisateur supprimé');
+        exit();
+    } catch (Exception $e) {
+        $message = "Erreur lors de la suppression.";
+        $messageType = "error";
+    }
+}
+
+
+if (isset($_POST['first_name']) && isset($_POST['last_name']) && isset($_POST['email'])) {
+    try {
+        $user = new Utilisateur([
+            'first_name' => $_POST['first_name'],
+            'last_name' => $_POST['last_name'],
+            'username' => $_POST['username'] ?? null,
+            'date_of_birth' => $_POST['date_of_birth'] ?? null,
+            'phone' => $_POST['phone'] ?? null,
+            'city' => $_POST['city'] ?? null,
+            'email' => $_POST['email'],
+            'password' => $_POST['password'] ?? 'default123',
+            'role' => $_POST['role'] ?? 'Entrepreneur',
+            'status' => $_POST['status'] ?? 'Actif'
+        ]);
+
+        if (!empty($_POST['id'])) {
+            $userController->updateUser($user, $_POST['id']);
+            
+
+            $profile = new Profile([
+                'Id_utilisateur' => $_POST['id'],
+                'bio' => $_POST['bio'] ?? '',
+                'linkedin' => $_POST['linkedin'] ?? '',
+                'competences' => $_POST['competences'] ?? '',
+                'ville' => $_POST['city'] ?? '',
+                'pays' => $_POST['pays'] ?? 'Tunisie',
+                'profession' => $_POST['role'] ?? 'Entrepreneur'
+            ]);
+            $profileController->updateProfile($profile, $_POST['id']);
+            
+            header('Location: admine.php?success=Utilisateur et profil mis à jour');
+        } else {
+            $userController->addUser($user);
+            header('Location: admine.php?success=Utilisateur ajouté');
+        }
+        exit();
+    } catch (Exception $e) {
+        $message = "Une erreur est survenue.";
+        $messageType = "error";
+    }
+}
+
+$users = $userController->listUsers();
+
+if (isset($_GET['success'])) {
+    $message = $_GET['success'];
+    $messageType = "success";
+}
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jobyfind — Admin CRUD PHP</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/styleadmin.css">
+  <style>
+    .alert { padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+    .alert-success { background: 
+    .alert-error { background: 
+    .profile-advanced-info { background: 
+    .profile-advanced-info p { margin-bottom: 8px; }
+  </style>
+  <script src="assets/js/admin.js"></script>
+</head>
+<body>
+
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon" style="background-color: #7EB2FF;"><img src="assets/images/jlog.png" style="width: 30px; height: 30px;" onerror="this.style.display='none'"></div>
+      <div class="logo-text">Joby<span>find</span></div>
+      <span class="sidebar-badge">Admin</span>
+    </div>
+    <div class="sidebar-section">
+      <p class="sidebar-section-label">Tableau de bord</p>
+      <a class="sidebar-link active" href="#">
+        <i class="fa-solid fa-users"></i>
+        <span>Utilisateurs</span>
+        <span class="badge"><?php echo count($users); ?></span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Statistiques</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Rôles & Accès</span>
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <p class="sidebar-section-label">Gestion</p>
+      <a class="sidebar-link" href="#">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <span>Formations</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <i class="fa-solid fa-blog"></i>
+        <span>Blogs</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <i class="fa-solid fa-calendar-star"></i>
+        <span>Événements</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <i class="fa-solid fa-briefcase"></i>
+        <span>Offres</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <i class="fa-solid fa-flag"></i>
+        <span>Signalements</span>
+        <span class="badge" style="background:var(--danger)">3</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <i class="fa-solid fa-gear"></i>
+        <span>Paramètres</span>
+      </a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="admin-profile">
+        <div class="admin-avatar">A</div>
+        <div class="admin-info">
+          <p>Admin</p>
+        </div>
+        <button class="logout-btn" title="Déconnexion" onclick="window.location.href='logout.php'">
+          <i class="fa fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+
+  <div class="main">
+
+
+    <header class="header">
+      <div class="header-breadcrumb">
+        <span>Admin</span> <i class="fa fa-chevron-right" style="font-size:9px"></i> <span class="current">Utilisateurs</span>
+      </div>
+      <div class="header-search">
+        <i class="fa fa-search"></i>
+        <input type="text" placeholder="Rechercher un utilisateur..." id="search-input" onkeyup="filterTableCustom()">
+      </div>
+      <div class="header-actions">
+        <div class="icon-btn" title="Retour Client" onclick="window.location.href='../frontoffice/signin.php'">
+            <i class="fa fa-arrow-left"></i>
+        </div>
+      </div>
+    </header>
+
+
+    <div class="content">
+
+      <?php if($message): ?>
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          showToast("<?php echo addslashes($message); ?>", "<?php echo $messageType; ?>");
+        });
+      </script>
+      <?php endif; ?>
+
+
+      <?php
+        $totalUsers = count($users);
+        $actifs = count(array_filter($users, fn($u) => $u['status'] === 'Actif'));
+        $attente = count(array_filter($users, fn($u) => $u['status'] === 'En attente'));
+        $suspendus = count(array_filter($users, fn($u) => $u['status'] === 'Suspendu'));
+      ?>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue"><i class="fa fa-users"></i></div>
+          <div>
+            <p class="stat-label">Total Utilisateurs</p>
+            <p class="stat-value"><?php echo $totalUsers; ?></p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green"><i class="fa fa-check-circle"></i></div>
+          <div>
+            <p class="stat-label">Comptes Actifs</p>
+            <p class="stat-value"><?php echo $actifs; ?></p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon amber"><i class="fa fa-clock"></i></div>
+          <div>
+            <p class="stat-label">En attente</p>
+            <p class="stat-value"><?php echo $attente; ?></p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red"><i class="fa fa-ban"></i></div>
+          <div>
+            <p class="stat-label">Suspendus</p>
+            <p class="stat-value"><?php echo $suspendus; ?></p>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <p class="table-title">Gestion des utilisateurs</p>
+            <p class="table-subtitle"><?php echo count($users); ?> utilisateurs enregistrés</p>
+          </div>
+          <div class="table-controls">
+            <button class="btn-primary" onclick="openAddModalPHP()">
+              <i class="fa fa-plus"></i> Ajouter
+            </button>
+          </div>
+        </div>
+
+        <table id="user-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Rôle</th>
+              <th>Statut</th>
+              <th>Membre depuis</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <?php if (empty($users)): ?>
+            <tr>
+              <td colspan="7" style="text-align:center;">Aucun utilisateur trouvé.</td>
+            </tr>
+            <?php else: ?>
+              <?php foreach ($users as $u): ?>
+              <tr>
+                <td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar" style="background:#dbeafe; color:#2563eb;"><?php echo strtoupper(substr($u['first_name'],0,1).substr($u['last_name'],0,1)); ?></div>
+                    <div>
+                      <p class="user-name"><?php echo htmlspecialchars($u['first_name'] . ' ' . $u['last_name']); ?></p>
+                      <p class="user-email">@<?php echo htmlspecialchars($u['username']); ?></p>
+                    </div>
+                  </div>
+                </td>
+                <td><?php echo htmlspecialchars($u['email']); ?></td>
+                <td><span class="badge badge-blue"><?php echo htmlspecialchars($u['role']); ?></span></td>
+                <td>
+                  <?php 
+                    $statusClass = 'badge-gray';
+                    if ($u['status'] === 'Actif') $statusClass = 'badge-green';
+                    elseif ($u['status'] === 'Suspendu') $statusClass = 'badge-red';
+                    elseif ($u['status'] === 'En attente') $statusClass = 'badge-amber';
+                  ?>
+                  <span class="badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($u['status']); ?></span>
+                </td>
+                <td><span style="font-size:12px;color:var(--muted);"><?php echo date('d/m/Y', strtotime($u['created_at'])); ?></span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn view" onclick='viewFullProfilePHP(<?php echo $u['id']; ?>)' title="Voir Profil Complet"><i class="fa fa-eye"></i></button>
+                    <button class="action-btn edit" onclick='editUserPHP(<?php echo json_encode($u); ?>)' title="Modifier"><i class="fa fa-pen"></i></button>
+                    <button class="action-btn del" onclick="confirmDeletePHP(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['first_name'].' '.$u['last_name']); ?>')" title="Supprimer"><i class="fa fa-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-overlay" id="user-view-modal-php">
+    <div class="modal" style="width: 600px;">
+      <div class="modal-header">
+        <p class="modal-title"><i class="fa fa-address-card"></i> Profil Complet</p>
+        <button class="modal-close" onclick="closeModalPHP('user-view-modal-php')"><i class="fa fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="view-modal-content">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px;">
+            <p><strong>Nom complet:</strong> <span id="view-fullname"></span></p>
+            <p><strong>Email:</strong> <span id="view-email"></span></p>
+            <p><strong>Téléphone:</strong> <span id="view-phone"></span></p>
+            <p><strong>Ville:</strong> <span id="view-city"></span></p>
+            <p><strong>Date de naissance:</strong> <span id="view-dob"></span></p>
+            <p><strong>Rôle:</strong> <span id="view-role"></span></p>
+            <p><strong>Statut:</strong> <span id="view-status"></span></p>
+            <p><strong>Membre depuis:</strong> <span id="view-created-at"></span></p>
+            <p><strong>Dernière connexion:</strong> <span id="view-last-login"></span></p>
+        </div>
+        
+        <div class="profile-advanced-info" id="advanced-profile-section">
+            <p><strong>Bio:</strong> <span id="view-bio">Chargement...</span></p>
+            <p><strong>LinkedIn:</strong> <a href="#" id="view-linkedin" target="_blank" style="display:none;">Voir le profil</a><span id="no-linkedin">N/A</span></p>
+            <p><strong>Profession:</strong> <span id="view-profession"></span></p>
+            <p><strong>Compétences:</strong> <span id="view-skills"></span></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="closeModalPHP('user-view-modal-php')">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-overlay" id="user-modal-php">
+    <div class="modal">
+      <div class="modal-header">
+        <p class="modal-title" id="modal-title-php">Ajouter un utilisateur</p>
+        <button class="modal-close" onclick="closeModalPHP('user-modal-php')"><i class="fa fa-xmark"></i></button>
+      </div>
+      
+      <form action="admine.php" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="id" id="php-id">
+          <div class="form-row">
+              <div class="form-group">
+                  <label class="form-label">Prénom</label>
+                  <input type="text" name="first_name" id="php-first_name" class="form-input">
+                  <span id="error-php-first_name" class="controle-saisie"></span>
+              </div>
+              <div class="form-group">
+                  <label class="form-label">Nom</label>
+                  <input type="text" name="last_name" id="php-last_name" class="form-input">
+                  <span id="error-php-last_name" class="controle-saisie"></span>
+              </div>
+          </div>
+          
+          <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="text" name="email" id="php-email" class="form-input">
+              <span id="error-php-email" class="controle-saisie"></span>
+          </div>
+
+          <div class="form-group">
+              <label class="form-label">Nom d'utilisateur</label>
+              <input type="text" name="username" id="php-username" class="form-input">
+              <span id="error-php-username" class="controle-saisie"></span>
+          </div>
+          
+          <div class="form-row">
+              <div class="form-group">
+                  <label class="form-label">Téléphone</label>
+                  <input type="text" name="phone" id="php-phone" class="form-input">
+                  <span id="error-php-phone" class="controle-saisie"></span>
+              </div>
+              <div class="form-group">
+                  <label class="form-label">Ville</label>
+                  <input type="text" name="city" id="php-city" class="form-input">
+                  <span id="error-php-city" class="controle-saisie"></span>
+              </div>
+          </div>
+          
+          <div class="form-group">
+              <label class="form-label">Date de naissance</label>
+              <input type="date" name="date_of_birth" id="php-date_of_birth" class="form-input">
+              <span id="error-php-date_of_birth" class="controle-saisie"></span>
+          </div>
+
+          <div class="form-group">
+              <label class="form-label">Nouveau mot de passe (laisser vide pour ne pas changer)</label>
+              <input type="password" name="password" id="php-password" class="form-input" placeholder="••••••••">
+              <span id="error-php-password" class="controle-saisie"></span>
+          </div>
+          
+          <div class="form-row">
+              <div class="form-group">
+                  <label class="form-label">Rôle</label>
+                  <select name="role" id="php-role" class="form-input">
+                      <option value="Entrepreneur">Entrepreneur</option>
+                      <option value="Mentor">Mentor</option>
+                      <option value="Entreprise">Entreprise</option>
+                      <option value="Admin">Admin</option>
+                  </select>
+              </div>
+              <div class="form-group">
+                  <label class="form-label">Statut</label>
+                  <select name="status" id="php-status" class="form-input">
+                      <option value="Actif">Actif</option>
+                      <option value="En attente">En attente</option>
+                      <option value="Suspendu">Suspendu</option>
+                  </select>
+              </div>
+          </div>
+
+
+          <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+              <p style="font-weight: 600; font-size: 14px; margin-bottom: 10px; color: #2563eb;">Informations de Profil</p>
+              <div class="form-group">
+                  <label class="form-label">Biographie</label>
+                  <textarea name="bio" id="php-bio" class="form-input" style="height: 60px;"></textarea>
+              </div>
+              <div class="form-row">
+                  <div class="form-group">
+                      <label class="form-label">LinkedIn (URL)</label>
+                      <input type="text" name="linkedin" id="php-linkedin" class="form-input">
+                  </div>
+                  <div class="form-group">
+                      <label class="form-label">Pays</label>
+                      <input type="text" name="pays" id="php-pays" class="form-input" value="Tunisie">
+                  </div>
+              </div>
+              <div class="form-group">
+                  <label class="form-label">Compétences (séparées par des virgules)</label>
+                  <input type="text" name="competences" id="php-competences" class="form-input">
+              </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" onclick="closeModalPHP('user-modal-php')">Annuler</button>
+            <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <div class="modal-overlay" id="delete-modal-php">
+    <div class="modal" style="width:400px;">
+      <div class="modal-header">
+        <p class="modal-title" style="color:#ef4444;"><i class="fa fa-triangle-exclamation"></i> Supprimer</p>
+        <button class="modal-close" onclick="closeModalPHP('delete-modal-php')"><i class="fa fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <p>Voulez-vous vraiment supprimer l'utilisateur <strong id="delete-name-php"></strong> ?</p>
+      </div>
+      <form action="admine.php" method="POST" class="modal-footer">
+          <input type="hidden" name="delete_id" id="php-delete-id">
+          <button type="button" class="btn-cancel" onclick="closeModalPHP('delete-modal-php')">Annuler</button>
+          <button type="submit" class="btn-danger">Supprimer</button>
+      </form>
+    </div>
+  </div>
+  <div class="toast-container" id="toast-container"></div>
+
+</body>
+</html>
