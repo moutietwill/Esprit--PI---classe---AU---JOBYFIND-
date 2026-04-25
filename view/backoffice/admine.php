@@ -90,9 +90,9 @@ if (isset($_GET['success'])) {
   <link rel="stylesheet" href="assets/css/styleadmin.css">
   <style>
     .alert { padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; display: flex; align-items: center; gap: 10px; }
-    .alert-success { background: 
-    .alert-error { background: 
-    .profile-advanced-info { background: 
+    .alert-success { background: #ecfdf5; color: #059669; border: 1px solid #10b981; }
+    .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #f87171; }
+    .profile-advanced-info { background: #f8fafc; border-radius: 8px; padding: 15px; margin-top: 15px; border-left: 4px solid #2563eb; }
     .profile-advanced-info p { margin-bottom: 8px; }
   </style>
   <script src="assets/js/admin.js"></script>

@@ -2,22 +2,13 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:    
-      --navy:    
-      --light:   
-      --border:  
-      --text:    
-      --muted:   
-      --error:   
+      --blue:    #2d79ff;
+      --navy:    #0b1f4b;
+      --light:   #f5f7fb;
+      --border:  #e2e8f0;
+      --text:    #374151;
+      --muted:   #9ca3af;
       --radius:  10px;
-    }
-
-    .controle-saisie {
-      display: block;
-      color: var(--error);
-      font-size: 11px;
-      margin-top: 4px;
-      font-weight: 500;
     }
 
     body {
@@ -29,14 +20,14 @@
       flex-direction: column;
     }
 
-    
+    /* ── NAV ── */
     nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 40px;
       height: 64px;
-      background: 
+      background: #fff;
       border-bottom: 1px solid var(--border);
     }
 
@@ -74,13 +65,13 @@
       text-decoration: none;
       transition: all .2s;
     }
-    .btn-outline:hover { background: var(--blue); color: 
+    .btn-outline:hover { background: var(--blue); color: #fff; }
 
     .btn-solid {
       padding: 8px 18px;
       background: var(--blue);
       border-radius: 50px;
-      color: 
+      color: #fff;
       font-size: 13px;
       font-weight: 600;
       text-decoration: none;
@@ -90,7 +81,7 @@
     }
     .btn-solid:hover { opacity: .88; }
 
-    
+    /* ── MAIN ── */
     main {
       flex: 1;
       display: flex;
@@ -101,7 +92,7 @@
     }
 
     .card {
-      background: 
+      background: #fff;
       border-radius: 18px;
       box-shadow: 0 4px 30px rgba(0,0,0,.07);
       padding: 44px 40px;
@@ -126,7 +117,7 @@
       line-height: 1.2;
     }
 
-    
+    /* Role tabs */
     .role-tabs {
       display: flex;
       background: var(--light);
@@ -151,12 +142,12 @@
     }
     .role-tab i { display: block; font-size: 14px; margin-bottom: 3px; }
     .role-tab.active {
-      background: 
+      background: #fff;
       color: var(--blue);
       box-shadow: 0 2px 8px rgba(0,0,0,.08);
     }
 
-    
+    /* Form */
     .form-row { display: flex; gap: 14px; }
     .form-row .form-group { flex: 1; }
 
@@ -180,7 +171,7 @@
       font-family: 'DM Sans', sans-serif;
       font-size: 14px;
       color: var(--text);
-      background: 
+      background: #fff;
       outline: none;
       transition: border-color .2s;
     }
@@ -197,7 +188,7 @@
     }
     .input-icon-wrap input { padding-left: 36px; }
 
-    
+    /* Password strength */
     .strength-bar {
       display: flex;
       gap: 4px;
@@ -234,7 +225,7 @@
       width: 100%;
       padding: 13px;
       background: var(--blue);
-      color: 
+      color: #fff;
       border: none;
       border-radius: 50px;
       font-family: 'DM Sans', sans-serif;
@@ -246,7 +237,7 @@
     }
     .btn-submit:hover { opacity: .88; }
 
-    
+    /* Divider */
     .divider {
       position: relative;
       text-align: center;
@@ -263,13 +254,13 @@
     }
     .divider span {
       position: relative;
-      background: 
+      background: #fff;
       padding: 0 12px;
       font-size: 12px;
       color: var(--muted);
     }
 
-    
+    /* Social buttons */
     .social-row { display: flex; gap: 10px; margin-bottom: 24px; }
     .btn-social {
       flex: 1;
@@ -296,14 +287,14 @@
     .card-footer-text a { color: var(--blue); font-weight: 600; text-decoration: none; }
     .card-footer-text a:hover { text-decoration: underline; }
 
-    
+    /* ── FOOTER ── */
     footer {
       text-align: center;
       padding: 20px;
       font-size: 12px;
       color: var(--muted);
       border-top: 1px solid var(--border);
-      background: 
+      background: #fff;
     }
 
     @media (max-width: 600px) {

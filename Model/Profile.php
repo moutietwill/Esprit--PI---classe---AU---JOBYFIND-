@@ -30,7 +30,7 @@ class Profile
         }
     }
 
-    
+
     public function getId_profil() { return $this->Id_profil; }
     public function getId_utilisateur() { return $this->Id_utilisateur; }
     public function getPhoto_profil() { return $this->photo_profil; }
