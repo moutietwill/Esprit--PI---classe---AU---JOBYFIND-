@@ -27,6 +27,9 @@ $listeFormations = $formationC->listeFormation();
         <a href="backoffice.php" class="back-nav-item active" style="text-decoration:none">
           <span class="nav-icon">🎓</span> Formations
         </a>
+        <a href="backofficeInscription.php" class="back-nav-item" style="text-decoration:none">
+          <span class="nav-icon">📋</span> Inscriptions
+        </a>
       </nav>
       <div class="back-footer">
         <div class="back-footer-avatar">A</div>
