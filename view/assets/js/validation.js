@@ -333,6 +333,252 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
+
+    // ----------------------------------------
+    // 6. COMMENTAIRES (Backoffice) - comments
+    // ----------------------------------------
+    const commentForm = document.getElementById('commentForm');
+    if (commentForm) {
+        const commentPostInput = document.getElementById('commentPostInput');
+        const commentUserInput = document.getElementById('commentUserInput');
+        const commentContentInput = document.getElementById('commentContentInput');
+
+        commentForm.addEventListener('submit', function (e) {
+            let isValid = true;
+
+            // Reset errors
+            const errorIds = ['commentPostError', 'commentUserError', 'commentContentError'];
+            errorIds.forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            if (commentPostInput) commentPostInput.style.borderColor = 'var(--border)';
+            if (commentUserInput) commentUserInput.style.borderColor = 'var(--border)';
+            if (commentContentInput) commentContentInput.style.borderColor = 'var(--border)';
+
+            // Validate Blog (only in add mode, when select exists)
+            if (commentPostInput && commentPostInput.value === '') {
+                document.getElementById('commentPostError').textContent = "Veuillez choisir un blog.";
+                document.getElementById('commentPostError').style.display = 'block';
+                commentPostInput.style.borderColor = '#ef4444';
+                isValid = false;
+            }
+
+            // Validate User Name
+            if (commentUserInput) {
+                const userName = commentUserInput.value.trim();
+                if (userName.length === 0) {
+                    document.getElementById('commentUserError').textContent = "Veuillez renseigner le nom d'utilisateur.";
+                    document.getElementById('commentUserError').style.display = 'block';
+                    commentUserInput.style.borderColor = '#ef4444';
+                    isValid = false;
+                } else if (userName.length < 2) {
+                    document.getElementById('commentUserError').textContent = "Le nom doit faire au moins 2 caractères.";
+                    document.getElementById('commentUserError').style.display = 'block';
+                    commentUserInput.style.borderColor = '#ef4444';
+                    isValid = false;
+                } else if (!/^[A-Za-zÀ-ÿ\s\-]+$/.test(userName)) {
+                    document.getElementById('commentUserError').textContent = "Seules les lettres, espaces et tirets sont autorisés.";
+                    document.getElementById('commentUserError').style.display = 'block';
+                    commentUserInput.style.borderColor = '#ef4444';
+                    isValid = false;
+                }
+            }
+
+            // Validate Content
+            if (commentContentInput) {
+                const content = commentContentInput.value.trim();
+                if (content.length === 0) {
+                    document.getElementById('commentContentError').textContent = "Veuillez renseigner le contenu du commentaire.";
+                    document.getElementById('commentContentError').style.display = 'block';
+                    commentContentInput.style.borderColor = '#ef4444';
+                    isValid = false;
+                } else if (content.length < 5) {
+                    document.getElementById('commentContentError').textContent = "Le commentaire doit faire au moins 5 caractères.";
+                    document.getElementById('commentContentError').style.display = 'block';
+                    commentContentInput.style.borderColor = '#ef4444';
+                    isValid = false;
+                } else if (content.length > 500) {
+                    document.getElementById('commentContentError').textContent = "Le commentaire ne peut pas dépasser 500 caractères.";
+                    document.getElementById('commentContentError').style.display = 'block';
+                    commentContentInput.style.borderColor = '#ef4444';
+                    isValid = false;
+                } else {
+                    // Check for bad words
+                    const badWords = ['merde', 'con', 'putain', 'salope', 'idiot', 'connard', 'bâtard', 'stupide'];
+                    let foundWords = [];
+                    badWords.forEach(word => {
+                        const regex = new RegExp('\\b' + word + '\\b', 'gi');
+                        if (regex.test(content)) {
+                            foundWords.push(word);
+                        }
+                    });
+                    if (foundWords.length > 0) {
+                        document.getElementById('commentContentError').textContent = "Le commentaire contient des mots inappropriés (" + foundWords.join(', ') + "). Veuillez les supprimer avant d'envoyer.";
+                        document.getElementById('commentContentError').style.display = 'block';
+                        commentContentInput.style.borderColor = '#ef4444';
+                        
+                        // Masquer temporairement les mots dans l'input pour indiquer ce qui pose problème
+                        let maskedContent = content;
+                        badWords.forEach(word => {
+                            const regex = new RegExp('\\b' + word + '\\b', 'gi');
+                            maskedContent = maskedContent.replace(regex, '*'.repeat(word.length));
+                        });
+                        commentContentInput.value = maskedContent;
+                        
+                        isValid = false;
+                    }
+                }
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+
+        // Real-time UX: clear errors on input
+        if (commentPostInput) {
+            commentPostInput.addEventListener('change', function () {
+                document.getElementById('commentPostError').style.display = 'none';
+                this.style.borderColor = 'var(--border)';
+            });
+        }
+        if (commentUserInput) {
+            commentUserInput.addEventListener('input', function () {
+                document.getElementById('commentUserError').style.display = 'none';
+                this.style.borderColor = 'var(--border)';
+            });
+        }
+        if (commentContentInput) {
+            commentContentInput.addEventListener('input', function () {
+                document.getElementById('commentContentError').style.display = 'none';
+                this.style.borderColor = 'var(--border)';
+            });
+        }
+    }
+
+    // ----------------------------------------
+    // 7. COMMENTAIRES - Recherche dynamique + Tri par date
+    // ----------------------------------------
+    const commentSearchInput = document.getElementById('commentSearchInput');
+    const commentSortDateBtn = document.getElementById('commentSortDateBtn');
+    const commentsTableBody = document.getElementById('commentsTableBody');
+
+    if (commentSearchInput && commentsTableBody) {
+        // ── Recherche dynamique ──
+        commentSearchInput.addEventListener('input', function () {
+            const query = this.value.trim().toLowerCase();
+            const rows = commentsTableBody.querySelectorAll('.comment-row');
+            const noResults = document.getElementById('noSearchResults');
+            let visibleCount = 0;
+
+            rows.forEach(function (row) {
+                const cells = row.querySelectorAll('td');
+                let rowText = '';
+                // Concatenate text from user, content, blog, date columns (skip actions)
+                for (let i = 0; i < cells.length - 1; i++) {
+                    rowText += ' ' + (cells[i].textContent || '').toLowerCase();
+                }
+
+                if (query === '' || rowText.indexOf(query) !== -1) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Show/hide "no results" message
+            if (noResults) {
+                if (visibleCount === 0 && query !== '') {
+                    noResults.style.display = 'block';
+                } else {
+                    noResults.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    if (commentSortDateBtn && commentsTableBody) {
+        // ── Tri par date ──
+        let sortOrder = 'DESC'; // Default: newest first (matches the SQL ORDER BY)
+
+        commentSortDateBtn.addEventListener('click', function () {
+            const rows = Array.from(commentsTableBody.querySelectorAll('.comment-row'));
+            const sortIcon = document.getElementById('commentSortIcon');
+
+            // Toggle order
+            sortOrder = (sortOrder === 'DESC') ? 'ASC' : 'DESC';
+
+            // Update icon
+            if (sortIcon) {
+                sortIcon.className = sortOrder === 'DESC' ? 'fas fa-sort-down' : 'fas fa-sort-up';
+            }
+
+            // Update button visual
+            if (sortOrder === 'ASC') {
+                commentSortDateBtn.style.background = '#dbeafe';
+                commentSortDateBtn.style.color = '#2d79ff';
+                commentSortDateBtn.style.borderColor = '#2d79ff';
+            } else {
+                commentSortDateBtn.style.background = '#e5e7eb';
+                commentSortDateBtn.style.color = '#374151';
+                commentSortDateBtn.style.borderColor = 'transparent';
+            }
+
+            // Sort rows by data-date attribute
+            rows.sort(function (a, b) {
+                const dateA = new Date(a.getAttribute('data-date'));
+                const dateB = new Date(b.getAttribute('data-date'));
+                return sortOrder === 'ASC' ? dateA - dateB : dateB - dateA;
+            });
+
+            // Re-append sorted rows
+            rows.forEach(function (row) {
+                commentsTableBody.appendChild(row);
+            });
+        });
+    }
+
+    // ----------------------------------------
+    // 8. BLOGS - Recherche dynamique
+    // ----------------------------------------
+    const blogSearchInput = document.getElementById('blogSearchInput');
+    const blogsTableBody = document.getElementById('blogsTableBody');
+
+    if (blogSearchInput && blogsTableBody) {
+        blogSearchInput.addEventListener('input', function () {
+            const query = this.value.trim().toLowerCase();
+            const rows = blogsTableBody.querySelectorAll('.blog-row');
+            const noResults = document.getElementById('noBlogSearchResults');
+            let visibleCount = 0;
+
+            rows.forEach(function (row) {
+                const cells = row.querySelectorAll('td');
+                let rowText = '';
+                // Concatenate text from blog title, category, price, status columns (skip actions)
+                for (let i = 0; i < cells.length - 1; i++) {
+                    rowText += ' ' + (cells[i].textContent || '').toLowerCase();
+                }
+
+                if (query === '' || rowText.indexOf(query) !== -1) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Show/hide "no results" message
+            if (noResults) {
+                if (visibleCount === 0 && query !== '') {
+                    noResults.style.display = 'block';
+                } else {
+                    noResults.style.display = 'none';
+                }
+            }
+        });
+    }
 });
 
 // Frontoffice: Likes (global function)
@@ -411,6 +657,31 @@ function submitComment(event, inputElement, postId) {
     if (/<[^>]*>?/gm.test(content)) {
         errDiv.textContent = "Les balises HTML ne sont pas autorisées.";
         errDiv.style.display = 'block';
+        return;
+    }
+
+    // Check for bad words
+    const badWords = ['merde', 'con', 'putain', 'salope', 'idiot', 'connard', 'bâtard', 'stupide'];
+    let foundWords = [];
+    badWords.forEach(word => {
+        const regex = new RegExp('\\b' + word + '\\b', 'gi');
+        if (regex.test(content)) {
+            foundWords.push(word);
+        }
+    });
+
+    if (foundWords.length > 0) {
+        errDiv.textContent = "Le commentaire contient des mots inappropriés (" + foundWords.join(', ') + "). Veuillez les supprimer.";
+        errDiv.style.display = 'block';
+        
+        // Masquer les mots dans l'input pour l'utilisateur
+        let maskedContent = content;
+        badWords.forEach(word => {
+            const regex = new RegExp('\\b' + word + '\\b', 'gi');
+            maskedContent = maskedContent.replace(regex, '*'.repeat(word.length));
+        });
+        inputElement.value = maskedContent;
+        
         return;
     }
 

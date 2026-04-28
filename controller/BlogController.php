@@ -82,7 +82,13 @@ class BlogController {
                 'cover_image'    => $coverImage,
                 'status'         => $post->getStatus(),
             ]);
-            return $db->lastInsertId();
+            $postId = $db->lastInsertId();
+
+            // Envoyer notification par email
+            require_once __DIR__ . '/../mailer.php';
+            Mailer::notifyNewPost($post->getTitle(), $post->getContent(), $categoryName, $post->getStatus());
+
+            return $postId;
         } catch (Exception $e) {
             throw new Exception('Erreur lors de la création: ' . $e->getMessage());
         }

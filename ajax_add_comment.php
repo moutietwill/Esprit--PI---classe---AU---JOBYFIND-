@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/controller/BlogController.php';
+require_once __DIR__ . '/mailer.php';
 
 header('Content-Type: application/json');
 
@@ -21,6 +22,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Contrôle des bad words
+    $badWords = ['merde', 'con', 'putain', 'salope', 'idiot', 'connard', 'bâtard', 'stupide'];
+    $foundWords = [];
+    foreach ($badWords as $word) {
+        if (preg_match('/\b' . preg_quote($word, '/') . '\b/i', $content)) {
+            $foundWords[] = $word;
+        }
+    }
+
+    if (!empty($foundWords)) {
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Le commentaire contient des mots inappropriés (' . implode(', ', $foundWords) . '). Veuillez les supprimer.'
+        ]);
+        exit;
+    }
+
     if ($postId <= 0) {
         echo json_encode(['success' => false, 'message' => 'Post non valide.']);
         exit;
@@ -30,6 +48,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $controller->AddComment($postId, $content, $userName);
 
     if ($result) {
+        // Récupérer le titre du post pour la notification
+        $post = $controller->RecupererPost($postId);
+        $postTitle = $post ? $post['title'] : 'Post inconnu';
+
+        // Envoyer la notification par email
+        require_once __DIR__ . '/mailer.php';
+        Mailer::notifyNewComment($userName, $content, $postTitle);
+
         echo json_encode([
             'success' => true, 
             'comment' => [

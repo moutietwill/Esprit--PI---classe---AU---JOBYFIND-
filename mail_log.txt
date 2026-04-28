@@ -1,0 +1,33 @@
+2026-04-28 10:49:51 | HTTP 401 | Subject: 📢 Nouvelle publication : mmmmmm | Response: {"errors":[{"message":"The provided authorization grant is invalid, expired, or revoked","field":null,"help":null}]}
+2026-04-28 10:51:55 | HTTP 401 | Subject: 💬 Nouveau commentaire de Test User | Response: {"errors":[{"message":"The provided authorization grant is invalid, expired, or revoked","field":null,"help":null}]}
+2026-04-28 10:51:55 | HTTP 401 | Subject: 📢 Nouvelle publication : Test Publication | Response: {"errors":[{"message":"The provided authorization grant is invalid, expired, or revoked","field":null,"help":null}]}
+2026-04-28 10:52:37 | HTTP 401 | Subject: 💬 Nouveau commentaire de Test User | Response: {"errors":[{"message":"The provided authorization grant is invalid, expired, or revoked","field":null,"help":null}]}
+2026-04-28 10:52:37 | HTTP 401 | Subject: 📢 Nouvelle publication : Test Publication | Response: {"errors":[{"message":"The provided authorization grant is invalid, expired, or revoked","field":null,"help":null}]}
+2026-04-28 10:56:18 | HTTP 401 | Subject: 💬 Nouveau commentaire de malek  | Response: {"errors":[{"message":"The provided authorization grant is invalid, expired, or revoked","field":null,"help":null}]}
+2026-04-28 10:57:07 | HTTP 401 | Subject: 💬 Nouveau commentaire de Vous | Response: {"errors":[{"message":"The provided authorization grant is invalid, expired, or revoked","field":null,"help":null}]}
+2026-04-28 11:16:50 | BREVO HTTP 401 | Subject: 💬 Nouveau commentaire de Test User | Resp: {"message":"Key not found","code":"unauthorized"}
+
+2026-04-28 11:16:50 | BREVO HTTP 401 | Subject: 📢 Nouvelle publication : Test Publication | Resp: {"message":"Key not found","code":"unauthorized"}
+
+2026-04-28 11:19:37 | BREVO HTTP 401 | Subject: 💬 Nouveau commentaire de Test User | Resp: {"message":"Key not found","code":"unauthorized"}
+
+2026-04-28 11:19:37 | BREVO HTTP 401 | Subject: 📢 Nouvelle publication : Test Publication | Resp: {"message":"Key not found","code":"unauthorized"}
+
+2026-04-28 11:19:37 | BREVO HTTP 401 | Subject: 💬 Nouveau commentaire de Test User | Resp: {"message":"Key not found","code":"unauthorized"}
+
+2026-04-28 11:19:37 | BREVO HTTP 401 | Subject: 📢 Nouvelle publication : Test Publication | Resp: {"message":"Key not found","code":"unauthorized"}
+
+2026-04-28 11:35:31 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Test User | Resp: {"messageId":"<202604280935.75639378277@smtp-relay.mailin.fr>"}
+
+2026-04-28 11:35:31 | BREVO HTTP 201 | Subject: 📢 Nouvelle publication : Test Publication | Resp: {"messageId":"<202604280935.56291756649@smtp-relay.mailin.fr>"}
+
+2026-04-28 11:35:31 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Test User | Resp: {"messageId":"<202604280935.42251938118@smtp-relay.mailin.fr>"}
+
+2026-04-28 11:35:32 | BREVO HTTP 201 | Subject: 📢 Nouvelle publication : Test Publication | Resp: {"messageId":"<202604280935.57409194696@smtp-relay.mailin.fr>"}
+
+2026-04-28 11:38:11 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Vous | Resp: {"messageId":"<202604280938.62465669421@smtp-relay.mailin.fr>"}
+
+2026-04-28 11:38:55 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de ali | Resp: {"messageId":"<202604280938.77512928726@smtp-relay.mailin.fr>"}
+
+2026-04-28 20:49:16 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Vous | Resp: {"messageId":"<202604281849.92829500453@smtp-relay.mailin.fr>"}
+
