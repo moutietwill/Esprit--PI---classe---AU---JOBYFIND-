@@ -433,36 +433,3 @@ textarea.form-input  { resize: vertical; min-height: 80px; }
 .empty-state i      { font-size: 36px; margin-bottom: 12px; opacity: .4; }
 .empty-state p      { font-size: 13px; }
 .empty-state strong { color: var(--navy); font-size: 15px; display: block; margin-bottom: 4px; }
-
-/* ============================================================
-   QUIZ DETAILS MODAL
-   ============================================================ */
-.quiz-details {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.detail-row {
-  display: flex;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.detail-label {
-  font-weight: 600;
-  color: var(--navy);
-  min-width: 140px;
-  font-size: 13px;
-}
-
-.detail-value {
-  color: var(--text);
-  font-size: 14px;
-  flex: 1;
-}
