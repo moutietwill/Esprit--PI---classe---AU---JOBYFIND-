@@ -100,20 +100,63 @@
       color: #fff;
     }
     .btn-primary:hover { background: #1a66f0; }
-    .btn-secondary {
-      background: var(--border);
-      color: var(--text);
-      border: none;
-      transition: background .2s;
+    .btn-qr {
+      background: #f0f2f8;
+      color: var(--blue);
+      border: 1px solid var(--border);
+      margin-left: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .btn-secondary:hover { background: #d1d5db; }
-    .btn-danger {
-      background: var(--danger);
+    .btn-qr:hover { background: #e2e8f0; border-color: var(--blue); }
+
+    .event-qr-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 58px;
+      height: 58px;
+      background: rgba(255,255,255,0.96);
+      border-radius: 10px;
+      padding: 5px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .event-qr-badge:hover {
+      transform: scale(1.13);
+      box-shadow: 0 6px 22px rgba(0,0,0,0.38);
+    }
+    .event-qr-badge img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 5px;
+      object-fit: contain;
+    }
+    .qr-tooltip {
+      position: absolute;
+      bottom: calc(100% + 7px);
+      right: 0;
+      background: rgba(11,31,75,0.92);
       color: #fff;
-      border: none;
-      transition: background .2s;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
     }
-    .btn-danger:hover { background: #dc2626; }
+    .event-qr-badge:hover .qr-tooltip { opacity: 1; }
 
     .hero {
       background: linear-gradient(135deg, var(--navy) 0%, #1a3a7a 100%);
@@ -282,81 +325,92 @@
     }
 
     .content {
-      max-width: 1400px;
+      max-width: 1200px;
       margin: 28px auto 60px;
       padding: 0 20px;
       display: grid;
-      grid-template-columns: 1fr 280px;
+      grid-template-columns: 1fr 300px;
       gap: 28px;
       align-items: start;
     }
 
-    .events-grid { 
+    .events-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
+      gap: 18px;
+      padding-bottom: 10px;
     }
 
     .event-card {
       background: #fff;
       border-radius: 14px;
       border: 1px solid var(--border);
-      overflow: hidden;
-      transition: box-shadow .3s, transform .3s;
-      cursor: pointer;
       display: flex;
       flex-direction: column;
-      height: 100%;
+      width: 100%;
+      gap: 0;
+      overflow: hidden;
+      transition: box-shadow .2s, transform .2s;
+      cursor: pointer;
     }
     .event-card:hover {
-      box-shadow: 0 12px 32px rgba(11,31,75,.15);
-      transform: translateY(-4px);
+      box-shadow: 0 6px 28px rgba(11,31,75,.1);
+      transform: translateY(-2px);
     }
 
-    .event-card-image {
+    .event-img-wrap {
       width: 100%;
       height: 180px;
-      background: linear-gradient(135deg, var(--navy) 0%, #1a3a7a 100%);
-      object-fit: cover;
-      display: block;
+      position: relative;
     }
-
-    .event-card-date-badge {
+    .event-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .event-card-date {
       position: absolute;
       top: 12px;
-      right: 12px;
-      background: var(--navy);
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
+      left: 12px;
+      min-width: 56px;
+      background: rgba(11, 31, 75, 0.85);
+      backdrop-filter: blur(4px);
+      border-radius: 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      line-height: 1.2;
+      justify-content: center;
+      padding: 10px 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
-    .event-card-date-badge .day {
-      font-size: 16px;
-      font-weight: 700;
+    .event-card-date .day {
+      font-family: "DM Serif Display", serif;
+      font-size: 24px;
+      color: #fff;
+      line-height: 1;
     }
-    .event-card-date-badge .month {
+    .event-card-date .month {
       font-size: 10px;
-      opacity: .8;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #7aabff;
+      margin-top: 4px;
+    }
+    .event-card-date .year {
+      display: none;
     }
 
     .event-card-body {
       flex: 1;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
+      padding: 18px 20px;
     }
     .event-card-top {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .event-card-title {
       font-size: 16px;
@@ -383,10 +437,10 @@
     .event-card-meta {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 18px;
       font-size: 12.5px;
       color: var(--muted);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       flex-wrap: wrap;
     }
     .event-card-meta span {
@@ -397,21 +451,18 @@
     .event-card-desc {
       font-size: 13.5px;
       color: #6b7280;
-      line-height: 1.5;
+      line-height: 1.55;
       margin-bottom: 14px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      flex-grow: 1;
     }
     .event-card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--border);
     }
     .event-organizer {
       display: flex;
@@ -800,64 +851,13 @@
       margin-top: auto;
     }
     footer a { color: #7aabff; text-decoration: none; }
-
-    @media (max-width: 1024px) {
-      .content {
-        grid-template-columns: 1fr;
-      }
-      .events-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 768px) {
-      .events-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
-      }
-      .event-card-title {
-        font-size: 15px;
-      }
-      .filters-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-      }
-      .sort-select {
-        width: 100%;
-        margin-left: 0;
-      }
-      nav {
-        padding: 0 20px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .events-grid {
-        grid-template-columns: 1fr;
-      }
-      .search-bar {
-        flex-wrap: wrap;
-      }
-      .search-bar input {
-        width: 100%;
-        order: 1;
-      }
-      .search-bar .search-btn {
-        order: 3;
-        width: 100%;
-      }
-      .event-card-image {
-        height: 150px;
-      }
-    }
   </style>
 </head>
 <body>
 
 <?php
+require_once __DIR__ . '/../../config/QRCode.php';
 $events = $events ?? [];
-$inscriptionsCount = $inscriptionsCount ?? 0;
 $basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
 $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
 ?>
@@ -866,7 +866,7 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
 <nav>
   <a class="nav-logo" href="/">Joby<span>find</span></a>
   <ul class="nav-links">
-    <li><a href="<?php echo htmlspecialchars($basePath . '/admin/events', ENT_QUOTES, 'UTF-8'); ?>" class="active">Événements</a></li>
+    <li><a href="<?php echo htmlspecialchars($basePath . '/index.php/admin/events', ENT_QUOTES, 'UTF-8'); ?>" class="active">Événements</a></li>
   </ul>
 </nav>
 
@@ -877,7 +877,8 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
   <p>Conférences, ateliers, hackathons, salons… Restez connecté à l'écosystème professionnel tunisien.</p>
   <div class="hero-stats">
     <div class="hero-stat"><div class="num"><?php echo count($events); ?></div><div class="lbl">Événements</div></div>
-        <div class="hero-stat"><div class="num"><?php echo (int) $inscriptionsCount; ?></div><div class="lbl">Participants</div></div>
+    <div class="hero-stat"><div class="num">12</div><div class="lbl">Villes</div></div>
+    <div class="hero-stat"><div class="num">0+</div><div class="lbl">Participants</div></div>
   </div>
 </section>
 
@@ -916,37 +917,46 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
         $lieu = $event->getLieu();
         $organisateurId = $event->getIdOrganisateur();
         $description = $event->getDescription();
-        $image = $event->getImage() ?: 'assets/images/event/default-event.jpg';
         $titreSlug = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
         $organisateurLabel = $organisateurId ? 'Organisateur #' . $organisateurId : 'Organisateur inconnu';
+        $imgId = ($event->getId() % 6) + 1;
+        $eventImage = htmlspecialchars($basePath . '/assets/images/event/e' . $imgId . '.png', ENT_QUOTES, 'UTF-8');
+        $qrEventUrl = QRCode::generateForEvent($event);
+        $qrRegUrl   = QRCode::generateForRegistration($event);
       ?>
       <div class="event-card" onclick="viewEventDetails(<?php echo $event->getId(); ?>)">
-        <div style="position: relative;">
-          <img src="/projetweb_avec_evenements/public/<?php echo htmlspecialchars($image, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo $titreSlug; ?>" class="event-card-image" onerror="this.src='/projetweb_avec_evenements/public/assets/images/event/default-event.jpg'">
-          <div class="event-card-date-badge">
+        <div class="event-img-wrap">
+          <img src="<?php echo $eventImage; ?>" alt="Image événement">
+          <div class="event-card-date">
             <div class="day"><?php echo date('d', strtotime($date)); ?></div>
             <div class="month"><?php echo date('M', strtotime($date)); ?></div>
+            <div class="year"><?php echo date('Y', strtotime($date)); ?></div>
+          </div>
+          <div class="event-qr-badge" onclick="event.stopPropagation(); showPublicQRModal('<?php echo $titreSlug; ?>', '<?php echo htmlspecialchars($qrEventUrl, ENT_QUOTES, 'UTF-8'); ?>', '<?php echo htmlspecialchars($qrRegUrl, ENT_QUOTES, 'UTF-8'); ?>')" title="Voir le QR Code">
+            <img src="<?php echo htmlspecialchars($qrEventUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="QR Code" loading="lazy">
+            <span class="qr-tooltip">📱 QR Code</span>
           </div>
         </div>
         <div class="event-card-body">
           <div class="event-card-top">
-            <div>
-              <div class="event-card-title"><?php echo $titreSlug; ?></div>
-              <span class="event-badge badge-tech">Général</span>
-            </div>
+            <div class="event-card-title"><?php echo $titreSlug; ?></div>
+            <span class="event-badge badge-general">Général</span>
           </div>
           <div class="event-card-meta">
+            <span><i class="fa fa-clock"></i> --:--</span>
             <span><i class="fa fa-location-dot"></i> <?php echo htmlspecialchars($lieu, ENT_QUOTES, 'UTF-8'); ?></span>
           </div>
-          <p class="event-card-desc"><?php echo htmlspecialchars(substr($description, 0, 85), ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="event-card-desc"><?php echo htmlspecialchars(substr($description, 0, 100), ENT_QUOTES, 'UTF-8'); ?>...</p>
           <div class="event-card-footer">
             <div class="event-organizer">
               <div class="org-avatar"><?php echo strtoupper(substr($organisateurLabel, 0, 2)); ?></div>
-              <span><?php echo htmlspecialchars($organisateurLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+              <div><?php echo htmlspecialchars($organisateurLabel, ENT_QUOTES, 'UTF-8'); ?></div>
             </div>
-            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openInscriptionModalWithEvent(<?php echo $event->getId(); ?>)" title="S'inscrire">
-              <i class="fa fa-plus"></i> S'inscrire
-            </button>
+            <div class="event-actions">
+              <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openInscriptionModal(<?php echo $event->getId(); ?>, <?php echo htmlspecialchars(json_encode($titreSlug), ENT_QUOTES, 'UTF-8'); ?>, '<?php echo htmlspecialchars($date, ENT_QUOTES, 'UTF-8'); ?>', '<?php echo htmlspecialchars($lieu, ENT_QUOTES, 'UTF-8'); ?>')">
+                <i class="fa fa-plus"></i> S'inscrire
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1015,25 +1025,27 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
       <div class="event-summary" id="event-summary">
         <div class="es-title" id="event-title"></div>
         <div class="es-meta">
-          <span><i class="fa fa-calendar"></i> <span id="event-date-time"></span></span>
+          <span><i class="fa fa-clock"></i> <span id="event-date-time"></span></span>
           <span><i class="fa fa-location-dot"></i> <span id="event-location"></span></span>
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Prénom *</label>
+        <label class="form-label">Prénom</label>
         <input type="text" class="form-control" id="firstname" placeholder="Jean">
       </div>
-      <div class="form-group">
-        <label class="form-label">Nom *</label>
-        <input type="text" class="form-control" id="lastname" placeholder="Dupont">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Email *</label>
-        <input type="email" class="form-control" id="email" placeholder="jean@email.com">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nom</label>
+          <input type="text" class="form-control" id="lastname" placeholder="Dupont">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="text" class="form-control" id="email" placeholder="jean@example.com">
+        </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('inscription-modal')">Annuler</button>
+      <button class="btn btn-outline" onclick="closeModal('inscription-modal')">Annuler</button>
       <button class="btn btn-primary" onclick="submitInscription()">S'inscrire</button>
     </div>
   </div>
@@ -1063,6 +1075,33 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
   </div>
 </div>
 
+<!-- QR Code Modal -->
+<div class="modal-overlay" id="public-qr-modal">
+  <div class="modal" style="width: 600px;">
+    <div class="modal-header" style="padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+      <div class="modal-title" id="public-qr-modal-title" style="font-size: 16px; font-weight: 600; color: var(--navy);">Codes QR</div>
+      <button class="modal-close" onclick="closeModal('public-qr-modal')" style="background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px;">
+        <i class="fa fa-xmark"></i>
+      </button>
+    </div>
+    <div class="modal-body" style="padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+      <div style="text-align: center;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--navy);">Détails de l'Événement</h3>
+        <img id="public-qr-event-img" src="" alt="QR Code Événement" style="max-width: 220px; width: 100%; border: 2px solid var(--border); border-radius: 8px; padding: 8px; background: white;">
+        <p style="margin: 12px 0 0 0; font-size: 12px; color: var(--muted);">Scannez pour voir les détails</p>
+      </div>
+      <div style="text-align: center;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--navy);">Inscription à l'Événement</h3>
+        <img id="public-qr-registration-img" src="" alt="QR Code Inscription" style="max-width: 220px; width: 100%; border: 2px solid var(--border); border-radius: 8px; padding: 8px; background: white;">
+        <p style="margin: 12px 0 0 0; font-size: 12px; color: var(--muted);">Scannez pour s'inscrire</p>
+      </div>
+    </div>
+    <div style="padding: 0 24px 20px;">
+      <button class="btn btn-outline" style="width:100%;" onclick="closeModal('public-qr-modal')">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast-container"></div>
 
@@ -1072,42 +1111,29 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
 </footer>
 
 <script>
-  let allEvens = <?php echo json_encode(array_map(function($e) {
+  let allEvens = <?php echo json_encode(array_map(function($e) use ($basePath) {
+    $imgId = ($e->getId() % 6) + 1;
+    $imagePath = $basePath . '/assets/images/event/e' . $imgId . '.png';
     return [
-      'id' => $e->getId(),
-      'titre' => $e->getTitre(),
-      'date' => $e->getDate(),
-      'heure' => '',
-      'lieu' => $e->getLieu(),
-      'categorie' => 'general',
+      'id'           => $e->getId(),
+      'titre'        => $e->getTitre(),
+      'date'         => $e->getDate(),
+      'heure'        => '',
+      'lieu'         => $e->getLieu(),
+      'categorie'    => 'general',
       'organisateur' => $e->getIdOrganisateur() ? 'Organisateur #' . $e->getIdOrganisateur() : 'Organisateur inconnu',
       'intervenants' => '',
-      'programme' => $e->getDescription() ?: $e->getTitre(),
-      'max' => 0,
-      'inscrits' => 0
+      'programme'    => $e->getDescription() ?: $e->getTitre(),
+      'max'          => 0,
+      'inscrits'     => 0,
+      'image'        => $imagePath,
+      'qrEventUrl'   => QRCode::generateForEvent($e),
+      'qrRegUrl'     => QRCode::generateForRegistration($e),
     ];
   }, $events)); ?>;
 
   let currentFilter = 'all';
   let currentEventForModal = null;
-  let currentEventIdForInscription = null;
-
-  function openInscriptionModalWithEvent(eventId) {
-    const event = allEvens.find(e => e.id === eventId);
-    if (!event) return;
-    
-    currentEventIdForInscription = eventId;
-    document.getElementById('event-title').textContent = event.titre;
-    document.getElementById('event-date-time').textContent = `${event.date} à ${event.heure || '--:--'}`;
-    document.getElementById('event-location').textContent = event.lieu;
-    
-    // Reset form
-    document.getElementById('firstname').value = '';
-    document.getElementById('lastname').value = '';
-    document.getElementById('email').value = '';
-    
-    openModal('inscription-modal');
-  }
 
   function setFilter(elem, filter) {
     document.querySelectorAll('.filter-chip, .cat-item').forEach(e => e.classList.remove('active'));
@@ -1133,10 +1159,17 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
     const grid = document.getElementById('events-grid');
     grid.innerHTML = filtered.map(e => `
       <div class="event-card" onclick="viewEventDetails(${e.id})">
-        <div class="event-card-date">
-          <div class="day">${new Date(e.date).getDate().toString().padStart(2, '0')}</div>
-          <div class="month">${new Date(e.date).toLocaleDateString('fr-FR', {month: 'short'}).toUpperCase()}</div>
-          <div class="year">${new Date(e.date).getFullYear()}</div>
+        <div class="event-img-wrap">
+          <img src="${e.image}" alt="Image événement">
+          <div class="event-card-date">
+            <div class="day">${new Date(e.date).getDate().toString().padStart(2, '0')}</div>
+            <div class="month">${new Date(e.date).toLocaleDateString('fr-FR', {month: 'short'}).toUpperCase()}</div>
+            <div class="year">${new Date(e.date).getFullYear()}</div>
+          </div>
+          <div class="event-qr-badge" onclick="event.stopPropagation(); showPublicQRModal('${e.titre.replace(/'/g,"\\'")}', '${e.qrEventUrl}', '${e.qrRegUrl}')" title="Voir le QR Code">
+            <img src="${e.qrEventUrl}" alt="QR Code" loading="lazy">
+            <span class="qr-tooltip">📱 QR Code</span>
+          </div>
         </div>
         <div class="event-card-body">
           <div class="event-card-top">
@@ -1154,7 +1187,7 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
               <div>${e.organisateur}</div>
             </div>
             <div class="event-actions">
-              <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openInscriptionModalWithEvent(${e.id})" title="S'inscrire">
+              <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openInscriptionModal(${e.id}, '${e.titre.replace(/'/g,"\\'")}', '${e.date}', '${e.lieu.replace(/'/g,"\\'")}')">
                 <i class="fa fa-plus"></i> S'inscrire
               </button>
             </div>
@@ -1162,6 +1195,17 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
         </div>
       </div>
     `).join('');
+  }
+
+  function openInscriptionModal(id, titre, date, lieu) {
+    const e = allEvens.find(ev => ev.id === id);
+    if (e) currentEventForModal = e;
+    else currentEventForModal = { id, titre, date, heure: '', lieu };
+
+    document.getElementById('event-title').textContent    = titre;
+    document.getElementById('event-date-time').textContent = date;
+    document.getElementById('event-location').textContent = lieu;
+    openModal('inscription-modal');
   }
 
   function viewEventDetails(id) {
@@ -1184,42 +1228,77 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
     openModal('detail-modal');
   }
 
+  function inscribeToEvent() {
+    if (!currentEventForModal) return;
+    openInscriptionModal(
+      currentEventForModal.id,
+      currentEventForModal.titre,
+      currentEventForModal.date,
+      currentEventForModal.lieu
+    );
+    closeModal('detail-modal');
+  }
+
   function submitInscription() {
-    const userIdSelect = document.getElementById('user-select').value;
-    let userId = userIdSelect ? parseInt(userIdSelect) : null;
-    
-    if (!userId) {
-      showToast('Veuillez sélectionner un utilisateur', 'error');
+    const firstname = document.getElementById('firstname').value.trim();
+    const lastname  = document.getElementById('lastname').value.trim();
+    const email     = document.getElementById('email').value.trim();
+
+    if (!firstname || !lastname || !email) {
+      showToast('Veuillez remplir tous les champs.', 'error');
       return;
     }
 
-    if (!currentEventIdForInscription) {
-      showToast('Erreur : événement non trouvé', 'error');
+    const nameRegex = /^[a-zA-ZÀ-ÿ\s\-]+$/;
+    if (!nameRegex.test(firstname)) {
+      showToast('Le prénom ne doit contenir que des lettres.', 'error');
+      return;
+    }
+    if (!nameRegex.test(lastname)) {
+      showToast('Le nom ne doit contenir que des lettres.', 'error');
       return;
     }
 
-    // Call API to register
-    fetch('/projetweb_avec_evenements/public/index.php/inscriptions/create', {
+    if (!currentEventForModal) {
+      showToast('Aucun événement sélectionné.', 'error');
+      return;
+    }
+
+    const submitBtn = document.querySelector('#inscription-modal .btn-primary');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Inscription en cours…';
+
+    const formData = new FormData();
+    formData.append('prenom', firstname);
+    formData.append('nom',    lastname);
+    formData.append('email',  email);
+
+    const basePath = <?php echo json_encode($basePath); ?>;
+    fetch(basePath + '/index.php/events/inscrire/' + currentEventForModal.id, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        idUtilisateur: userId,
-        idEvenement: currentEventIdForInscription,
-        statut: 'Confirmée'
-      })
+      body: formData,
     })
     .then(r => r.json())
     .then(data => {
       if (data.success) {
-        showToast('✓ Inscription confirmée!', 'success');
+        showToast(data.message, 'success');
         closeModal('inscription-modal');
+        document.getElementById('firstname').value = '';
+        document.getElementById('lastname').value  = '';
+        document.getElementById('email').value     = '';
+        // Update inscrits count in local data
+        if (typeof data.inscrits !== 'undefined') {
+          const ev = allEvens.find(e => e.id === currentEventForModal.id);
+          if (ev) ev.inscrits = data.inscrits;
+        }
       } else {
-        showToast('Erreur : ' + (data.error || 'Inscription échouée'), 'error');
+        showToast(data.message || 'Erreur lors de l\'inscription.', 'error');
       }
     })
-    .catch(e => {
-      console.error(e);
-      showToast('Erreur réseau : ' + e.message, 'error');
+    .catch(() => showToast('Erreur de connexion au serveur.', 'error'))
+    .finally(() => {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'S\'inscrire';
     });
   }
 
@@ -1239,19 +1318,26 @@ $basePath = ($basePath && $basePath !== '.') ? $basePath : '';
     setTimeout(() => toast.remove(), 3500);
   }
 
+  function showPublicQRModal(eventTitle, qrEventUrl, qrRegistrationUrl) {
+    const modal = document.getElementById('public-qr-modal');
+    if (!modal) {
+      console.error('QR Modal not found');
+      return;
+    }
+    document.getElementById('public-qr-modal-title').textContent = 'Codes QR - ' + eventTitle;
+    document.getElementById('public-qr-event-img').src = qrEventUrl;
+    document.getElementById('public-qr-registration-img').src = qrRegistrationUrl;
+    openModal('public-qr-modal');
+  }
+
   document.querySelectorAll('.modal-overlay').forEach(modal => {
     modal.addEventListener('click', e => {
       if (e.target === modal) closeModal(modal.id);
     });
   });
 
-  // Initialize
-  loadUsersDropdown();
   filterEvents();
 </script>
 
 </body>
 </html>
-
-
-

@@ -1,11 +1,13 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /projetweb_avec_evenements/public/
-    
-    # Block access to files and directories that shouldn't be public
+
+    # Serve real files and directories as-is
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    
-    # Rewrite to index.php
-    RewriteRule ^(.*)$ index.php/$1 [L]
+
+    # Route everything else through index.php
+    RewriteRule ^(.*)$ index.php/$1 [L,QSA]
 </IfModule>
+
+# Fallback if mod_rewrite is not available — DirectoryIndex still serves index.php
+DirectoryIndex index.php

@@ -6,7 +6,7 @@ class Event {
     private $date;
     private $lieu;
     private $idOrganisateur;
-    private $image;
+    public $image;
 
     public function __construct($data = []) {
         $this->idEvenement = $data['idEvenement'] ?? null;
@@ -15,7 +15,7 @@ class Event {
         $this->date = $data['date'] ?? '';
         $this->lieu = $data['lieu'] ?? '';
         $this->idOrganisateur = $data['idOrganisateur'] ?? 0;
-        $this->image = $data['image'] ?? 'assets/images/event/default-event.jpg';
+        $this->image = $data['image'] ?? 'public/assets/images/event/default.jpg';
     }
 
     // GETTERS
@@ -25,7 +25,6 @@ class Event {
     public function getDate() { return $this->date; }
     public function getLieu() { return $this->lieu; }
     public function getIdOrganisateur() { return $this->idOrganisateur; }
-    public function getImage() { return $this->image; }
 
     // SETTERS
     public function setTitre($v) { $this->titre = $v; }
@@ -34,7 +33,6 @@ class Event {
     public function setLieu($v) { $this->lieu = $v; }
     public function setIdOrganisateur($v) { $this->idOrganisateur = $v; }
     public function setId($id) { $this->idEvenement = $id; }
-    public function setImage($v) { $this->image = $v; }
 
     public function toArray() {
         return [
@@ -47,4 +45,6 @@ class Event {
             'image' => $this->image,
         ];
     }
+    public function setImage($img) { $this->image = $img; }
+    public function getImage() { return $this->image; }
 }

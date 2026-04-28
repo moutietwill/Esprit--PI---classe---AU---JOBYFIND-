@@ -8,12 +8,8 @@
 define('BASE_PATH', dirname(__FILE__));
 
 // Auto-load classes
-spl_autoload_register(function ($class) {
-    $file = BASE_PATH . '/app/' . str_replace('\\', '/', $class) . '.php';
-    if (file_exists($file)) {
-        require_once $file;
-    }
-});
+require_once BASE_PATH . '/core/Autoloader.php';
+Autoloader::register(BASE_PATH);
 
 // Enable error reporting
 error_reporting(E_ALL);
@@ -92,7 +88,7 @@ ini_set('display_errors', 1);
         <?php
         try {
             // Get database instance
-            $db = config\Database::getInstance();
+            $db = Database::getInstance();
             
             echo '<div class="success">✅ <strong>Connexion réussie!</strong> La base de données est connectée.</div>';
             

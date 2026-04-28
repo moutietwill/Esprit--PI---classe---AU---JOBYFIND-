@@ -1,5 +1,4 @@
-
-<?php
+﻿<?php
 if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
     $requestUri = $_SERVER['REQUEST_URI'];
     $redirectUrl = preg_replace('@/views/admin(?:/.*)?$@', '/projetweb_avec_evenements/public/index.php/admin/inscriptions', $requestUri);
@@ -7,381 +6,783 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
     exit;
 }
 
-$inscriptions = $inscriptions ?? [];
-$users = $users ?? [];
-$events = $events ?? [];
-$statuses = $statuses ?? ['Confirmee', 'Present', 'Absent', 'Annulee'];
+$scriptName = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
+$baseDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+if ($baseDir === '.' || $baseDir === '/') {
+    $baseDir = '';
+}
+$indexBase = $baseDir . '/index.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin - Inscriptions</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <title>Jobyfind - Gestion Inscriptions</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
-    :root { --blue:#2d79ff; --navy:#0b1f4b; --bg:#f0f2f8; --surface:#fff; --border:#e2e8f0; --text:#374151; --muted:#6b7280; --danger:#ef4444; }
-    * { box-sizing:border-box; margin:0; padding:0; }
-    body { font-family:"DM Sans",sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
-    .sidebar { width:240px; background:var(--navy); min-height:100vh; position:fixed; left:0; top:0; }
-    .sidebar-logo { display:flex; align-items:center; gap:10px; padding:20px; border-bottom:1px solid rgba(255,255,255,.08); color:#fff; text-decoration:none; font-weight:600; }
-    .sidebar-nav { padding:10px; }
-    .sidebar-link { display:flex; gap:8px; align-items:center; padding:9px 10px; border-radius:8px; color:rgba(255,255,255,.7); text-decoration:none; }
-    .sidebar-link.active { background:var(--blue); color:#fff; }
-    .main { flex:1; margin-left:240px; }
-    .header { height:60px; background:#fff; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; }
-    .content { padding:20px 28px; }
-    .card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-    .card-header { display:flex; justify-content:space-between; align-items:center; padding:16px; border-bottom:1px solid var(--border); }
-    .card-title { font-size:24px; color:var(--navy); font-weight:600; }
-    .card-subtitle { font-size:13px; color:var(--muted); margin-top:4px; }
-    .btn-primary { border:none; background:var(--blue); color:#fff; border-radius:6px; padding:9px 14px; cursor:pointer; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { padding:12px 16px; border-bottom:1px solid var(--border); text-align:left; font-size:13px; }
-    thead { background:#f8f9fb; }
-    .action-btns { display:flex; gap:6px; }
-    .action-btn { width:30px; height:30px; border:1px solid var(--border); background:#fff; border-radius:6px; cursor:pointer; }
-    .action-btn.del:hover { border-color:var(--danger); color:var(--danger); }
-    .action-btn.edit:hover { border-color:var(--blue); color:var(--blue); }
-    .status-select { border:1px solid var(--border); border-radius:6px; padding:6px 8px; }
-    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:99; align-items:center; justify-content:center; }
-    .modal-overlay.open { display:flex; }
-    .modal { width:480px; max-width:94vw; background:#fff; border-radius:10px; overflow:hidden; }
-    .modal-header { padding:16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
-    .modal-body { padding:16px; }
-    .modal-footer { padding:16px; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
-    .btn-secondary { border:1px solid var(--border); background:#fff; padding:8px 12px; border-radius:6px; cursor:pointer; }
-    .form-group { margin-bottom:12px; }
-    .form-group label { display:block; margin-bottom:5px; font-size:12px; color:var(--navy); font-weight:600; }
-    .form-group select { width:100%; border:1px solid var(--border); border-radius:6px; padding:9px 10px; }
-    .form-group input[type="datetime-local"] { width:100%; border:1px solid var(--border); border-radius:6px; padding:9px 10px; }
-    .alert { margin-bottom:12px; border-radius:8px; padding:10px 12px; font-size:13px; }
-    .alert.error { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
-    .alert.success { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #2d79ff;
+      --navy: #0b1f4b;
+      --sidebar-w: 240px;
+      --header-h: 60px;
+      --bg: #f0f2f8;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #374151;
+      --muted: #9ca3af;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: "DM Sans", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--navy);
+      min-height: 100vh;
+      position: fixed;
+      top: 0; left: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-logo .logo-icon {
+      width: 34px; height: 34px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 14px; font-weight: 600;
+    }
+    .sidebar-logo .logo-text {
+      font-family: "DM Serif Display", serif;
+      color: #fff;
+      font-size: 17px;
+    }
+    .sidebar-logo .logo-text span { color: #7aabff; }
+
+    .sidebar-section {
+      padding: 18px 12px 6px;
+    }
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.3);
+      padding: 0 8px;
+      margin-bottom: 6px;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: rgba(255,255,255,.55);
+      cursor: pointer;
+      transition: all .15s;
+      font-size: 13px;
+    }
+    .sidebar-link:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.75); }
+    .sidebar-link.active { background: var(--blue); color: #fff; }
+    .sidebar-link i { font-size: 13px; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 14px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .admin-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.08);
+    }
+    .admin-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--blue);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 12px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .admin-info {
+      flex: 1; min-width: 0;
+    }
+    .admin-info p {
+      font-size: 12px;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    .admin-info span {
+      font-size: 10px;
+      color: rgba(255,255,255,.5);
+    }
+
+    .main {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .header-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .header-breadcrumb .current { color: var(--navy); font-weight: 600; }
+    .header-breadcrumb a { color: var(--muted); cursor: pointer; text-decoration: none; }
+    .header-breadcrumb a:hover { color: var(--blue); }
+
+    .header-search {
+      flex: 1;
+      max-width: 250px;
+      position: relative;
+    }
+    .header-search i {
+      position: absolute;
+      left: 11px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted); font-size: 12px;
+    }
+    .header-search input {
+      width: 100%;
+      padding: 7px 12px 7px 32px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 12px;
+      color: var(--text);
+      outline: none;
+    }
+    .header-search input:focus { border-color: var(--blue); }
+
+    .content { padding: 28px; }
+
+    .table-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-title { font-size: 15px; font-weight: 600; color: var(--navy); }
+    .table-subtitle { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+    .table-controls { display: flex; gap: 8px; align-items: center; }
+
+    .btn-primary {
+      padding: 7px 14px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: opacity .15s;
+    }
+    .btn-primary:hover { opacity: .88; }
+
+    .btn-back {
+      padding: 7px 14px;
+      background: transparent;
+      color: var(--blue);
+      border: 1.5px solid var(--blue);
+      border-radius: 7px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      text-decoration: none;
+    }
+    .btn-back:hover { background: #dbeafe; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 11px 22px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: #fafbfd;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .12s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8faff; }
+    tbody td { padding: 13px 22px; vertical-align: middle; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-gray { background: #f1f5f9; color: #64748b; }
+
+    .action-btns { display: flex; gap: 6px; }
+    .action-btn {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      transition: all .12s;
+    }
+    .action-btn:hover.edit { border-color: var(--blue); color: var(--blue); background: #dbeafe; }
+    .action-btn:hover.del { border-color: #ef4444; color: #ef4444; background: #fee2e2; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(11,31,75,.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: 14px;
+      width: 500px;
+      max-width: 95vw;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 16px; font-weight: 600; color: var(--navy); }
+    .modal-close {
+      background: none; border: none;
+      color: var(--muted); cursor: pointer;
+      font-size: 14px; padding: 4px;
+      transition: color .12s;
+    }
+    .modal-close:hover { color: #ef4444; }
+    .modal-body { padding: 20px 24px; }
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+    .form-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .form-input:focus { border-color: var(--blue); }
+
+    .form-input.success {
+      border-color: var(--success) !important;
+      background-color: rgba(34, 197, 94, 0.05);
+    }
+    .form-group.has-error .form-input {
+      border-color: #ef4444;
+      background-color: rgba(239, 68, 68, 0.05);
+    }
+    .form-error {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+    }
+    .form-error.show {
+      display: block;
+    }
+
+    .btn-danger {
+      padding: 8px 16px;
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-danger:hover { opacity: .88; }
+    .btn-cancel {
+      padding: 8px 16px;
+      background: transparent;
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+    .btn-cancel:hover { border-color: var(--muted); }
+
+    .toast-container {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      background: var(--navy);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn .25s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    }
+    .toast i { font-size: 14px; }
+    .toast.success i { color: var(--success); }
+    .toast.error i { color: #ef4444; }
+    @keyframes slideIn {
+      from { transform: translateX(40px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    .empty-state p {
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
-  <aside class="sidebar">
-    <a href="/projetweb_avec_evenements/public/index.php/admin" class="sidebar-logo">
-      <i class="fa fa-cogs"></i> Admin
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">JF</div>
+    <div class="logo-text">Joby<span>find</span></div>
+  </div>
+  <div class="sidebar-section">
+    <p class="sidebar-section-label">Tableau de bord</p>
+    <a class="sidebar-link" href="<?php echo htmlspecialchars($indexBase . '/admin/events'); ?>">
+      <i class="fa-solid fa-calendar-days"></i>
+      <span>Evenement</span>
     </a>
-    <nav class="sidebar-nav">
-      <a href="/projetweb_avec_evenements/public/index.php/admin/events" class="sidebar-link"><i class="fa fa-calendar"></i> Evenements</a>
-      <a href="/projetweb_avec_evenements/public/index.php/admin/inscriptions" class="sidebar-link active"><i class="fa fa-clipboard"></i> Inscriptions</a>
-    </nav>
-  </aside>
-
-  <main class="main">
-    <div class="header">Admin / Inscriptions</div>
-    <div class="content">
-      <div id="alert-root"></div>
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Gestion des Inscriptions</div>
-            <div class="card-subtitle" id="table-count">0 inscriptions trouvees</div>
-          </div>
-          <button class="btn-primary" onclick="openCreateModal()"><i class="fa fa-plus"></i> Ajouter</button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Utilisateur</th>
-              <th>Evenement</th>
-              <th>Date Inscription</th>
-              <th>Statut</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="inscriptions-tbody">
-            <?php foreach ($inscriptions as $inscription): ?>
-              <tr data-id="<?php echo (int) $inscription->idInscription; ?>">
-                <td>
-                  <strong><?php echo htmlspecialchars(trim(($inscription->prenom ?? '') . ' ' . ($inscription->nom ?? ''))); ?></strong><br>
-                  <span style="font-size:11px;color:var(--muted)"><?php echo htmlspecialchars($inscription->email ?? ''); ?></span>
-                </td>
-                <td><?php echo htmlspecialchars($inscription->titre_evenement ?? 'N/A'); ?></td>
-                <td><?php echo htmlspecialchars(date('d/m/Y', strtotime($inscription->dateInscription))); ?></td>
-                <td>
-                  <select class="status-select" onchange="updateStatus(<?php echo (int) $inscription->idInscription; ?>, this.value)">
-                    <?php foreach ($statuses as $status): ?>
-                      <?php $selected = (Inscription::normalizeStatus($inscription->statut ?? '') === $status) ? 'selected' : ''; ?>
-                      <option value="<?php echo htmlspecialchars($status); ?>" <?php echo $selected; ?>><?php echo htmlspecialchars($status); ?></option>
-                    <?php endforeach; ?>
-                  </select>
-                </td>
-                <td>
-                  <div class="action-btns">
-                    <button class="action-btn edit" onclick="openEditModal(<?php echo (int) $inscription->idInscription; ?>)" title="Modifier"><i class="fa fa-edit"></i></button>
-                    <button class="action-btn del" onclick="deleteInscription(<?php echo (int) $inscription->idInscription; ?>)" title="Supprimer"><i class="fa fa-trash"></i></button>
-                  </div>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </main>
-
-  <div class="modal-overlay" id="inscription-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="modal-title">Ajouter une inscription</h3>
-        <button class="action-btn" onclick="closeModal()"><i class="fa fa-times"></i></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="inscription-id">
-        <div class="form-group">
-          <label>Utilisateur</label>
-          <select id="idUtilisateur">
-            <option value="">Selectionner un utilisateur</option>
-            <?php foreach ($users as $user): ?>
-              <option value="<?php echo (int) $user->getId(); ?>">
-                <?php echo htmlspecialchars($user->getPrenom() . ' ' . $user->getNom() . ' (' . $user->getEmail() . ')'); ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Evenement</label>
-          <select id="idEvenement">
-            <option value="">Selectionner un evenement</option>
-            <?php foreach ($events as $event): ?>
-              <option value="<?php echo (int) $event->getId(); ?>"><?php echo htmlspecialchars($event->getTitre()); ?></option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Date Inscription</label>
-          <input type="datetime-local" id="dateInscription">
-        </div>
-        <div class="form-group">
-          <label>Statut</label>
-          <select id="statut">
-            <?php foreach ($statuses as $status): ?>
-              <option value="<?php echo htmlspecialchars($status); ?>"><?php echo htmlspecialchars($status); ?></option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal()">Annuler</button>
-        <button class="btn-primary" onclick="submitInscription()">Enregistrer</button>
+    <a class="sidebar-link active" href="<?php echo htmlspecialchars($indexBase . '/admin/inscriptions'); ?>">
+      <i class="fa-solid fa-clipboard-list"></i>
+      <span>Inscriptions</span>
+    </a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="admin-profile">
+      <div class="admin-avatar">SA</div>
+      <div class="admin-info">
+        <p>Super Admin</p>
+        <span>admin@jobyfind.tn</span>
       </div>
     </div>
   </div>
+</aside>
 
-  <script>
-    const statuses = <?php echo json_encode(array_values($statuses)); ?>;
-    const usersData = <?php
-      $u = [];
-      foreach ($users as $user) {
-        $u[] = [
-          'id' => $user->getId(),
-          'name' => $user->getPrenom() . ' ' . $user->getNom(),
-          'email' => $user->getEmail()
-        ];
-      }
-      echo json_encode($u);
-    ?>;
-    const eventsData = <?php
-      $e = [];
-      foreach ($events as $event) {
-        $e[] = ['id' => $event->getId(), 'title' => $event->getTitre()];
-      }
-      echo json_encode($e);
-    ?>;
-    const inscriptionsData = <?php echo json_encode($inscriptions); ?>;
+<!-- MAIN -->
+<div class="main">
 
-    function getBaseIndexPath() {
-      const path = window.location.pathname;
-      const indexPos = path.indexOf('/index.php');
-      return indexPos !== -1 ? path.slice(0, indexPos + '/index.php'.length) : '/index.php';
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-breadcrumb">
+      <a href="<?php echo htmlspecialchars($indexBase . '/admin/events'); ?>">Admin</a>
+      <span>â€º</span>
+      <span class="current">Inscriptions <?php echo isset($event) ? '(' . htmlspecialchars($event->getTitre()) . ')' : ''; ?></span>
+    </div>
+    <div class="header-search">
+      <i class="fa fa-magnifying-glass"></i>
+      <input type="text" id="search-input" placeholder="Rechercher une inscription..." onkeyup="filterInscriptionTable()">
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- TABLE -->
+    <div class="table-card">
+      <div class="table-header">
+        <div>
+          <div class="table-title">Gestion des Inscriptions</div>
+          <div class="table-subtitle" id="table-count">0 inscriptions trouvées</div>
+        </div>
+        <div class="table-controls">
+          <a class="btn-back" href="<?php echo htmlspecialchars($indexBase . '/admin/events'); ?>">
+            <i class="fa fa-arrow-left"></i> Retour
+          </a>
+        </div>
+      </div>
+
+      <table id="inscriptions-table">
+        <thead>
+          <tr>
+            <th>Événement</th>
+            <th>Nom</th>
+            <th>Prénom</th>
+            <th>Email</th>
+            <th>Date</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="inscriptions-tbody">
+          <?php if (isset($inscriptions) && is_array($inscriptions)): ?>
+            <?php if (count($inscriptions) > 0): ?>
+              <?php foreach ($inscriptions as $insc): ?>
+          <tr class="inscription-row" data-id="<?php echo $insc->getId(); ?>">
+            <td>
+              <?php
+                $eventLabel = trim((string) $insc->getTitreEvenement());
+                if ($eventLabel === '') {
+                    $eventLabel = 'ID #' . (string) $insc->getIdEvenement();
+                }
+              ?>
+              <strong><?php echo htmlspecialchars($eventLabel); ?></strong>
+            </td>
+            <td><strong><?php echo htmlspecialchars($insc->getNom()); ?></strong></td>
+            <td><?php echo htmlspecialchars($insc->getPrenom()); ?></td>
+            <td><?php echo htmlspecialchars($insc->getEmail()); ?></td>
+            <td><?php echo date('d/m/Y', strtotime($insc->getDateInscription())); ?></td>
+            <td>
+              <span class="badge badge-green">
+                <i class="fa fa-check"></i> <?php echo htmlspecialchars($insc->getStatut()); ?>
+              </span>
+            </td>
+            <td>
+              <div class="action-btns">
+                <button class="action-btn edit" title="Modifier" onclick="openEditModal(<?php echo $insc->getId(); ?>)">
+                  <i class="fa fa-edit"></i>
+                </button>
+                <button class="action-btn del" title="Supprimer" onclick="deleteInscription(<?php echo $insc->getId(); ?>)">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+              <?php endforeach; ?>
+            <?php else: ?>
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="fa fa-inbox"></i>
+                <p>Aucune inscription trouvÃ©e</p>
+              </div>
+            </td>
+          </tr>
+            <?php endif; ?>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Edit Inscription Modal -->
+<div class="modal-overlay" id="inscription-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Modifier l'inscription</div>
+      <button class="modal-close" onclick="closeModal()">
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
+    <form id="inscription-form" method="POST" action="">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nom *</label>
+          <input type="text" name="nom" class="form-input" required>
+          <div class="form-error" data-field="nom"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">PrÃ©nom *</label>
+          <input type="text" name="prenom" class="form-input" required>
+          <div class="form-error" data-field="prenom"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input type="email" name="email" class="form-input" required>
+          <div class="form-error" data-field="email"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Statut *</label>
+          <select name="statut" class="form-input" required>
+            <option value="confirmÃ©e">ConfirmÃ©e</option>
+            <option value="en attente">En attente</option>
+            <option value="annulÃ©e">AnnulÃ©e</option>
+          </select>
+          <div class="form-error" data-field="statut"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="closeModal()">Annuler</button>
+        <button type="submit" class="btn-primary">
+          <i class="fa fa-check"></i> Modifier
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal" style="width: 420px;">
+    <div class="modal-header">
+      <div class="modal-title">Confirmer la suppression</div>
+      <button class="modal-close" onclick="closeDeleteModal()">
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>ÃŠtes-vous sÃ»r de vouloir supprimer cette inscription ? Cette action est irrÃ©versible.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" onclick="closeDeleteModal()">Annuler</button>
+      <button type="button" class="btn-danger" onclick="confirmDelete()">
+        <i class="fa fa-trash"></i> Supprimer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+let inscriptionToDelete = null;
+let editingInscriptionId = null;
+
+// Get inscriptions data from PHP
+const inscriptionsData = <?php 
+  $inscArray = [];
+  if (isset($inscriptions) && is_array($inscriptions)) {
+    foreach ($inscriptions as $insc) {
+      $inscArray[] = [
+        'id' => $insc->getId(),
+        'idEvenement' => $insc->getIdEvenement(),
+        'titreEvenement' => $insc->getTitreEvenement(),
+        'nom' => $insc->getNom(),
+        'prenom' => $insc->getPrenom(),
+        'email' => $insc->getEmail(),
+        'statut' => $insc->getStatut(),
+        'dateInscription' => $insc->getDateInscription(),
+      ];
     }
+  }
+  echo json_encode($inscArray);
+?>;
 
-    function showAlert(message, type = 'success') {
-      const root = document.getElementById('alert-root');
-      root.innerHTML = `<div class="alert ${type}">${message}</div>`;
-      setTimeout(() => { root.innerHTML = ''; }, 2500);
-    }
+function openEditModal(id) {
+  editingInscriptionId = id;
+  const insc = inscriptionsData.find(i => String(i.id) === String(id));
+  
+  if (!insc) {
+    showToast('Inscription non trouvÃ©e', 'error');
+    return;
+  }
 
-    function updateTableCount() {
-      const count = document.querySelectorAll('#inscriptions-tbody tr').length;
-      document.getElementById('table-count').textContent = `${count} inscription${count > 1 ? 's' : ''} trouvee${count > 1 ? 's' : ''}`;
-    }
+  const form = document.getElementById('inscription-form');
+  form.querySelector('input[name="nom"]').value = insc.nom;
+  form.querySelector('input[name="prenom"]').value = insc.prenom;
+  form.querySelector('input[name="email"]').value = insc.email;
+  form.querySelector('select[name="statut"]').value = insc.statut;
+  form.action = getAdminIndexPath() + '/admin/updateInscription/' + id;
 
-    function openCreateModal() {
-      document.getElementById('modal-title').textContent = 'Ajouter une inscription';
-      document.getElementById('inscription-id').value = '';
-      document.getElementById('idUtilisateur').value = '';
-      document.getElementById('idEvenement').value = '';
-      document.getElementById('dateInscription').value = new Date().toISOString().slice(0, 16);
-      document.getElementById('statut').value = statuses[0] || 'Confirmee';
-      document.getElementById('inscription-modal').classList.add('open');
-    }
+  document.getElementById('inscription-modal').classList.add('open');
+}
 
-    function normalizeStatusValue(value) {
-      const s = String(value || '').toLowerCase();
-      if (s.includes('present')) return 'Present';
-      if (s.includes('absent')) return 'Absent';
-      if (s.includes('annul')) return 'Annulee';
-      return 'Confirmee';
-    }
+function closeModal() {
+  document.getElementById('inscription-modal').classList.remove('open');
+  editingInscriptionId = null;
+}
 
-    function openEditModal(id) {
-      const item = inscriptionsData.find(i => Number(i.idInscription) === Number(id));
-      if (!item) {
-        showAlert('Inscription introuvable', 'error');
-        return;
+function deleteInscription(id) {
+  inscriptionToDelete = id;
+  document.getElementById('delete-modal').classList.add('open');
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.remove('open');
+  inscriptionToDelete = null;
+}
+
+function confirmDelete() {
+  if (!inscriptionToDelete) return;
+  window.location.href = getAdminIndexPath() + '/admin/deleteInscription/' + inscriptionToDelete;
+}
+
+function getAdminIndexPath() {
+  const path = window.location.pathname;
+  const parts = path.split('/');
+  
+  // Find the index.php position and rebuild the path up to the project root
+  let adminPath = '';
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] === 'index.php') {
+      adminPath = '/' + parts.slice(1, i).join('/');
+      if (adminPath && !adminPath.endsWith('/')) {
+        adminPath += '/';
       }
-      document.getElementById('modal-title').textContent = 'Modifier une inscription';
-      document.getElementById('inscription-id').value = item.idInscription;
-      document.getElementById('idUtilisateur').value = item.idUtilisateur;
-      document.getElementById('idEvenement').value = item.idEvenement;
-      // Convert date format from 'YYYY-MM-DD HH:MM:SS' to 'YYYY-MM-DDTHH:MM'
-      const dateStr = (item.dateInscription || '').replace(' ', 'T').substring(0, 16);
-      document.getElementById('dateInscription').value = dateStr;
-      document.getElementById('statut').value = normalizeStatusValue(item.statut);
-      document.getElementById('inscription-modal').classList.add('open');
+      if (adminPath === '/') adminPath = '';
+      break;
     }
+  }
+  
+  return (adminPath ? adminPath : '') + '/index.php';
+}
 
-    function closeModal() {
-      document.getElementById('inscription-modal').classList.remove('open');
+function filterInscriptionTable() {
+  const input = document.getElementById('search-input');
+  const filter = input.value.toLowerCase();
+  const table = document.getElementById('inscriptions-table');
+  const tr = table.getElementsByTagName('tr');
+  let count = 0;
+
+  for (let i = 1; i < tr.length; i++) {
+    const row = tr[i];
+    if (row.classList.contains('empty-state')) continue;
+    
+    const text = row.textContent || row.innerText;
+    if (text.toLowerCase().indexOf(filter) > -1) {
+      row.style.display = '';
+      count++;
+    } else {
+      row.style.display = 'none';
     }
+  }
 
-    function validateInscriptionForm() {
-      const idUtilisateur = document.getElementById('idUtilisateur').value.trim();
-      const idEvenement = document.getElementById('idEvenement').value.trim();
-      const dateInscription = document.getElementById('dateInscription').value.trim();
-      const statut = document.getElementById('statut').value.trim();
-      
-      // Vérifier utilisateur
-      if (!idUtilisateur) {
-        showAlert('❌ Veuillez sélectionner un utilisateur', 'error');
-        return false;
-      }
-      
-      // Vérifier événement
-      if (!idEvenement) {
-        showAlert('❌ Veuillez sélectionner un événement', 'error');
-        return false;
-      }
-      
-      // Vérifier date
-      if (!dateInscription) {
-        showAlert('❌ Veuillez entrer une date d\'inscription', 'error');
-        return false;
-      }
-      
-      // Vérifier format et validité de la date
-      const dateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
-      if (!dateRegex.test(dateInscription)) {
-        showAlert('❌ Format de date invalide', 'error');
-        return false;
-      }
-      
-      // Vérifier que la date est valide
-      const dateObj = new Date(dateInscription);
-      if (isNaN(dateObj.getTime())) {
-        showAlert('❌ La date n\'est pas valide', 'error');
-        return false;
-      }
-      
-      // Vérifier statut
-      if (!statut) {
-        showAlert('❌ Veuillez sélectionner un statut', 'error');
-        return false;
-      }
-      
-      // Vérifier que le statut est valide
-      const validStatuses = ['Confirmee', 'Present', 'Absent', 'Annulee'];
-      if (!validStatuses.includes(statut)) {
-        showAlert('❌ Statut invalide', 'error');
-        return false;
-      }
-      
-      return true;
-    }
+  document.getElementById('table-count').textContent = count + ' inscription' + (count !== 1 ? 's' : '') + ' trouvÃ©e' + (count !== 1 ? 's' : '');
+}
 
-    function submitInscription() {
-      // Valider le formulaire
-      if (!validateInscriptionForm()) {
-        return;
-      }
-      
-      const id = document.getElementById('inscription-id').value;
-      const dateValue = document.getElementById('dateInscription').value;
-      // Convert from 'YYYY-MM-DDTHH:MM' to 'YYYY-MM-DD HH:MM:SS'
-      const dateInscription = dateValue ? dateValue.replace('T', ' ') + ':00' : new Date().toISOString().slice(0, 19).replace('T', ' ');
-      const payload = {
-        id: id || undefined,
-        idUtilisateur: Number(document.getElementById('idUtilisateur').value),
-        idEvenement: Number(document.getElementById('idEvenement').value),
-        dateInscription: dateInscription,
-        statut: document.getElementById('statut').value
-      };
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.innerHTML = '<i class="fa ' + (type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle') + '"></i> ' + message;
+  container.appendChild(toast);
 
-      const endpoint = id ? '/inscriptions/update' : '/inscriptions/create';
-      fetch(getBaseIndexPath() + endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (!data.success) {
-          showAlert(data.error || 'Operation echouee', 'error');
-          return;
-        }
-        closeModal();
-        showAlert('✅ ' + (data.message || 'Succes'));
-        window.location.reload();
-      })
-      .catch(() => showAlert('❌ Erreur reseau', 'error'));
-    }
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 250);
+  }, 3000);
+}
 
-    function updateStatus(id, status) {
-      fetch(getBaseIndexPath() + '/inscriptions/updateStatus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, statut: status })
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (!data.success) {
-          showAlert(data.error || 'Erreur de mise a jour', 'error');
-          window.location.reload();
-          return;
-        }
-        showAlert('Statut mis a jour');
-      })
-      .catch(() => showAlert('Erreur reseau', 'error'));
-    }
+// Initialize table count
+document.addEventListener('DOMContentLoaded', () => {
+  const tbody = document.getElementById('inscriptions-tbody');
+  const rows = tbody.querySelectorAll('tr.inscription-row');
+  document.getElementById('table-count').textContent = rows.length + ' inscription' + (rows.length !== 1 ? 's' : '') + ' trouvÃ©e' + (rows.length !== 1 ? 's' : '');
 
-    function deleteInscription(id) {
-      if (!confirm('Supprimer cette inscription ?')) {
-        return;
-      }
-      fetch(getBaseIndexPath() + '/inscriptions/delete?id=' + id, {
-        method: 'DELETE'
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (!data.success) {
-          showAlert(data.error || 'Suppression impossible', 'error');
-          return;
-        }
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) row.remove();
-        updateTableCount();
-        showAlert('Inscription supprimee');
-      })
-      .catch(() => showAlert('Erreur reseau', 'error'));
-    }
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('success')) {
+    const action = params.get('action') || 'update';
+    const messages = {
+      update: 'Inscription modifiée avec succès',
+      delete: 'Inscription supprimée avec succès'
+    };
+    showToast(messages[action] || 'Opération réussie', 'success');
+  }
 
-    updateTableCount();
-  </script>
+  if (params.get('error')) {
+    showToast(params.get('msg') || 'Une erreur est survenue', 'error');
+  }
+});
+</script>
 </body>
 </html>
+

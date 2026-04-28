@@ -15,6 +15,7 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -75,31 +76,29 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
       <div class="sidebar-logo-text">Jobyfind</div>
     </div>
     <div class="sidebar-section">
-      <button class="sidebar-link active" onclick="showPage('users', this)"><i class="fa fa-users"></i> Utilisateurs</button>
-      <button class="sidebar-link" onclick="showPage('events', this)"><i class="fa fa-calendar"></i> Événements</button>
+      <button class="sidebar-link active" onclick="showPage('events', this)"><i class="fa fa-calendar"></i> Événements</button>
     </div>
   </aside>
 
   <div class="main">
     <header class="header">
       <div class="header-breadcrumb">
-        <span>Admin</span> <span>›</span> <span class="current" id="page-title">Utilisateurs</span>
+        <span>Admin</span> <span>›</span> <span class="current" id="page-title">Événements</span>
       </div>
     </header>
 
     <div class="content">
-      <div id="users-content">
-        <div class="stats-grid">
-          <div class="stat-card"><div class="stat-value" id="user-total">0</div><div class="stat-label">Total Utilisateurs</div></div>
-          <div class="stat-card"><div class="stat-value" id="event-total">0</div><div class="stat-label">Total Événements</div></div>
-        </div>
-        <p style="text-align: center; color: var(--muted); margin-top: 40px;">Page utilisateurs en développement</p>
-      </div>
-
-      <div id="events-content" style="display:none;">
+      <div id="events-content">
         <div class="stats-grid">
           <div class="stat-card"><div class="stat-value" id="event-total-stats">0</div><div class="stat-label">Total Événements</div></div>
           <div class="stat-card"><div class="stat-value" id="event-upcoming">0</div><div class="stat-label">À Venir</div></div>
+        </div>
+        
+        <div class="table-card" style="padding: 24px; margin-bottom: 24px;">
+          <h3 style="font-size: 16px; font-weight: 600; color: var(--navy); margin-bottom: 20px;">Statistiques des Événements selon le Lieu</h3>
+          <div style="height: 320px; width: 100%;">
+            <canvas id="locationChart"></canvas>
+          </div>
         </div>
         <div class="table-card">
           <div class="table-header">
@@ -149,11 +148,74 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
       if (indexPos !== -1) return path.slice(0, indexPos + '/index.php'.length) + '/admin';
       return '/index.php/admin';
     }
+    let locationChartInstance = null;
+
+    function renderLocationChart() {
+      const locationCounts = {};
+      eventsData.forEach(e => {
+        const loc = e.lieu ? e.lieu.trim() : 'Inconnu';
+        if (loc === '') return;
+        locationCounts[loc] = (locationCounts[loc] || 0) + 1;
+      });
+
+      const labels = Object.keys(locationCounts);
+      const data = Object.values(locationCounts);
+
+      const ctx = document.getElementById('locationChart').getContext('2d');
+      
+      if (locationChartInstance) {
+        locationChartInstance.destroy();
+      }
+
+      locationChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Nombre d\'événements',
+            data: data,
+            backgroundColor: [
+              'rgba(45, 121, 255, 0.8)',
+              'rgba(34, 197, 94, 0.8)',
+              'rgba(245, 158, 11, 0.8)',
+              'rgba(239, 68, 68, 0.8)',
+              'rgba(139, 92, 246, 0.8)',
+              'rgba(14, 165, 233, 0.8)',
+              'rgba(236, 72, 153, 0.8)'
+            ],
+            borderColor: 'transparent',
+            borderWidth: 0,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { stepSize: 1 }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              padding: 12,
+              backgroundColor: 'rgba(11, 31, 75, 0.9)',
+              titleFont: { size: 14, family: "'DM Sans', sans-serif" },
+              bodyFont: { size: 13, family: "'DM Sans', sans-serif" },
+              cornerRadius: 8,
+              displayColors: false
+            }
+          }
+        }
+      });
+    }
+
     function updateEventStats() {
-      document.getElementById('event-total').textContent = eventsData.length;
       document.getElementById('event-total-stats').textContent = eventsData.length;
       document.getElementById('event-upcoming').textContent = eventsData.filter(e => new Date(e.date) > new Date()).length;
-      document.getElementById('user-total').textContent = '0';
+      renderLocationChart();
     }
     function renderEventTable() {
       const tbody = document.getElementById('event-tbody');
@@ -188,7 +250,11 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
             } else { showToast(data.error || 'Erreur', 'error'); } 
         } catch (err) { showToast('Erreur: ' + err.message, 'error'); } 
     });
-    function showPage(page) { if (page === 'events') { document.getElementById('users-content').style.display = 'none'; document.getElementById('events-content').style.display = 'block'; document.getElementById('page-title').textContent = 'Événements'; renderEventTable(); updateEventStats(); } else { document.getElementById('users-content').style.display = 'block'; document.getElementById('events-content').style.display = 'none'; document.getElementById('page-title').textContent = 'Utilisateurs'; } }
+    function showPage(page) { 
+      document.getElementById('page-title').textContent = 'Événements'; 
+      renderEventTable(); 
+      updateEventStats(); 
+    }
     updateEventStats();
     renderEventTable();
 

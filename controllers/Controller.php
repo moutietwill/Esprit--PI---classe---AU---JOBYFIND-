@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Event.php';
-require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Inscription.php';
 
 class Controller {
     protected function render($view, $data = []) {
@@ -21,7 +21,8 @@ class Controller {
         if (strpos($url, '/') === 0 && !preg_match('#^https?://#i', $url)) {
             $script = $_SERVER['SCRIPT_NAME'] ?? '';
             $baseDir = rtrim(str_replace('\\', '/', dirname($script)), '/');
-            $url = ($baseDir && $baseDir !== '.' ? $baseDir : '') . $url;
+            // Use index.php in the redirect path so it works with or without mod_rewrite
+            $url = ($baseDir && $baseDir !== '.' ? $baseDir : '') . '/index.php' . $url;
         }
         header('Location: ' . $url);
         exit;
@@ -55,19 +56,13 @@ class Controller {
 
     protected function mapRowToEvent(array $row): Event
     {
-        $images = ['e1.png', 'e2.png', 'e3.png', 'e4.png', 'e5.png', 'e6.png', 'e11.png', 'e22.png', 'e33.png'];
-        $imageIndex = ($row['idEvenement'] ?? 0) % count($images);
-        $image = 'assets/images/event/' . $images[$imageIndex];
-        
-        $event = new Event([
-            'idEvenement' => $row['idEvenement'] ?? null,
-            'titre' => $row['titre'] ?? '',
-            'description' => $row['description'] ?? '',
-            'date' => $row['date'] ?? '',
-            'lieu' => $row['lieu'] ?? '',
-            'idOrganisateur' => $row['idOrganisateur'] ?? null,
-            'image' => $image
-        ]);
+        $event = new Event();
+        $event->setId($row['idEvenement'] ?? null);
+        $event->setTitre($row['titre'] ?? '');
+        $event->setDescription($row['description'] ?? '');
+        $event->setDate($row['date'] ?? '');
+        $event->setLieu($row['lieu'] ?? '');
+        $event->setIdOrganisateur($row['idOrganisateur'] ?? null);
         return $event;
     }
 
@@ -172,42 +167,159 @@ class Controller {
         return $events;
     }
 
-    protected function mapRowToUser(array $row): User
-    {
-        $user = new User();
-        $user->setId($row['idUtilisateur'] ?? null);
-        $user->setPrenom($row['prenom'] ?? '');
-        $user->setNom($row['nom'] ?? '');
-        $user->setEmail($row['email'] ?? '');
-        $user->setRole($row['role'] ?? '');
-        $user->setStatus($row['status'] ?? '');
-        $user->setDate($row['date_creation'] ?? '');
-        $user->setLast($row['date_derniere_activite'] ?? '');
-        return $user;
-    }
-
-    protected function fetchAllUsers(): array
+    /**
+     * Save inscription to DB
+     */
+    protected function saveInscription(Inscription $inscription): bool
     {
         $db = $this->getEventDb();
-        $stmt = $db->prepare("SELECT * FROM utilisateur ORDER BY prenom, nom ASC");
-        $stmt->execute();
 
-        $users = [];
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $users[] = $this->mapRowToUser($row);
+        // Ensure inscription table exists with correct structure
+        $db->exec("CREATE TABLE IF NOT EXISTS `inscription` (
+            `idInscription` int(11) NOT NULL AUTO_INCREMENT,
+            `idEvenement` int(11) NOT NULL,
+            `nom` varchar(100) NOT NULL,
+            `prenom` varchar(100) NOT NULL,
+            `email` varchar(255) NOT NULL,
+            `dateInscription` date NOT NULL,
+            `statut` varchar(50) NOT NULL DEFAULT 'confirmée',
+            PRIMARY KEY (`idInscription`),
+            KEY `idEvenement` (`idEvenement`),
+            KEY `idx_email` (`email`),
+            UNIQUE KEY `unique_inscription` (`idEvenement`, `email`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $stmt = $db->prepare(
+            "INSERT INTO inscription (idEvenement, nom, prenom, email, dateInscription, statut)
+             VALUES (:e, :nom, :prenom, :email, :d, :s)"
+        );
+        $ok = $stmt->execute([
+            ':e' => $inscription->getIdEvenement(),
+            ':nom' => $inscription->getNom(),
+            ':prenom' => $inscription->getPrenom(),
+            ':email' => $inscription->getEmail(),
+            ':d' => $inscription->getDateInscription(),
+            ':s' => $inscription->getStatut(),
+        ]);
+
+        if ($ok) {
+            $inscription->setId($db->lastInsertId());
         }
 
-        return $users;
+        return $ok;
     }
 
-    protected function fetchUserById($id): ?User
+    /**
+     * Count inscriptions for a given event
+     */
+    protected function countInscriptions(int $idEvenement): int
     {
         $db = $this->getEventDb();
-        $stmt = $db->prepare("SELECT * FROM utilisateur WHERE idUtilisateur = :id");
+        $stmt = $db->prepare("SELECT COUNT(*) FROM inscription WHERE idEvenement = :e");
+        $stmt->execute([':e' => $idEvenement]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Map row to Inscription
+     */
+    protected function mapRowToInscription(array $row): Inscription
+    {
+        $inscription = new Inscription();
+        $inscription->setId($row['idInscription'] ?? null);
+        $inscription->setIdEvenement($row['idEvenement'] ?? null);
+        $inscription->setTitreEvenement($row['titre_evenement'] ?? '');
+        $inscription->setNom($row['nom'] ?? '');
+        $inscription->setPrenom($row['prenom'] ?? '');
+        $inscription->setEmail($row['email'] ?? '');
+        $inscription->setDateInscription($row['dateInscription'] ?? '');
+        $inscription->setStatut($row['statut'] ?? 'confirmée');
+        return $inscription;
+    }
+
+    /**
+     * Fetch all inscriptions
+     */
+    protected function fetchAllInscriptions(): array
+    {
+        $db = $this->getEventDb();
+        $stmt = $db->prepare("SELECT i.*, e.titre as titre_evenement FROM inscription i 
+                              LEFT JOIN evenement e ON i.idEvenement = e.idEvenement 
+                              ORDER BY i.dateInscription DESC");
+        $stmt->execute();
+
+        $inscriptions = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $inscriptions[] = $this->mapRowToInscription($row);
+        }
+
+        return $inscriptions;
+    }
+
+    /**
+     * Fetch inscription by ID
+     */
+    protected function fetchInscriptionById($id): ?Inscription
+    {
+        $db = $this->getEventDb();
+        $stmt = $db->prepare("SELECT i.*, e.titre as titre_evenement FROM inscription i 
+                              LEFT JOIN evenement e ON i.idEvenement = e.idEvenement 
+                              WHERE i.idInscription = :id");
         $stmt->execute([':id' => $id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $row ? $this->mapRowToUser($row) : null;
+        return $row ? $this->mapRowToInscription($row) : null;
+    }
+
+    /**
+     * Fetch inscriptions by event
+     */
+    protected function fetchInscriptionsByEvent($idEvenement): array
+    {
+        $db = $this->getEventDb();
+        $stmt = $db->prepare("SELECT i.*, e.titre as titre_evenement FROM inscription i 
+                              LEFT JOIN evenement e ON i.idEvenement = e.idEvenement 
+                              WHERE i.idEvenement = :e 
+                              ORDER BY i.dateInscription DESC");
+        $stmt->execute([':e' => $idEvenement]);
+
+        $inscriptions = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $inscriptions[] = $this->mapRowToInscription($row);
+        }
+
+        return $inscriptions;
+    }
+
+    /**
+     * Update inscription
+     */
+    protected function updateInscriptionData(Inscription $inscription): bool
+    {
+        $db = $this->getEventDb();
+        $stmt = $db->prepare(
+            "UPDATE inscription 
+             SET nom = :nom, prenom = :prenom, email = :email, statut = :statut
+             WHERE idInscription = :id"
+        );
+
+        return $stmt->execute([
+            ':id' => $inscription->getId(),
+            ':nom' => $inscription->getNom(),
+            ':prenom' => $inscription->getPrenom(),
+            ':email' => $inscription->getEmail(),
+            ':statut' => $inscription->getStatut(),
+        ]);
+    }
+
+    /**
+     * Delete inscription
+     */
+    protected function removeInscription($id): bool
+    {
+        $db = $this->getEventDb();
+        $stmt = $db->prepare("DELETE FROM inscription WHERE idInscription = :id");
+        return $stmt->execute([':id' => $id]);
     }
 }
 ?>

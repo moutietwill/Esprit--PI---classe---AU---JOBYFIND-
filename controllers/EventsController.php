@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/Event.php';
+require_once __DIR__ . '/../config/Mailer.php';
 
 class EventsController extends Controller {
 
@@ -12,17 +13,7 @@ class EventsController extends Controller {
      */
     public function index() {
         $events = $this->fetchAllEvents();
-        $users = $this->fetchAllUsers();
-        $db = $this->getEventDb();
-        $stmt = $db->prepare("SELECT COUNT(*) AS total FROM inscription");
-        $stmt->execute();
-        $inscriptionsCount = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
-
-        $this->render('events/index', [
-            'events' => $events,
-            'users' => $users,
-            'inscriptionsCount' => $inscriptionsCount
-        ]);
+        $this->render('events/index', ['events' => $events]);
     }
 
     /**
@@ -65,7 +56,8 @@ class EventsController extends Controller {
                 'description' => $description,
                 'date' => $_POST['date'] ?? '',
                 'lieu' => $_POST['lieu'] ?? '',
-                'idOrganisateur' => (int)($_POST['idOrganisateur'] ?? 0)
+                'idOrganisateur' => (int)($_POST['idOrganisateur'] ?? 0),
+                'image' => 'public/assets/images/event/default.jpg'
             ]);
 
             $result = $this->persistEvent($event);
@@ -152,7 +144,87 @@ class EventsController extends Controller {
     }
 
     /**
-     * Register user for event
+     * Store user registration — handles AJAX POST from front-end
+     * URL: /events/inscrire/{idEvenement}
+     */
+    public function inscrire($idEvenement) {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Méthode non autorisée.']);
+            exit;
+        }
+
+        try {
+            $idEvenement = (int) $idEvenement;
+            $prenom = trim($_POST['prenom'] ?? '');
+            $nom    = trim($_POST['nom']    ?? '');
+            $email  = trim($_POST['email']  ?? '');
+
+            if (!$prenom || !$nom || !$email) {
+                echo json_encode(['success' => false, 'message' => 'Tous les champs sont requis.']);
+                exit;
+            }
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                echo json_encode(['success' => false, 'message' => 'Adresse email invalide.']);
+                exit;
+            }
+
+            $event = $this->fetchEventById($idEvenement);
+            if (!$event) {
+                echo json_encode(['success' => false, 'message' => 'Événement introuvable.']);
+                exit;
+            }
+
+            // Save inscription
+            $inscription = new Inscription([
+                'idEvenement'     => $idEvenement,
+                'nom'             => $nom,
+                'prenom'          => $prenom,
+                'email'           => $email,
+                'dateInscription' => date('Y-m-d'),
+                'statut'          => 'confirmée',
+            ]);
+
+            $ok = $this->saveInscription($inscription);
+
+            if ($ok) {
+                // Envoyer un email de confirmation
+                try {
+                    $mailer = new Mailer();
+                    $mailer->sendInscriptionConfirmation(
+                        $prenom,
+                        $nom,
+                        $email,
+                        $event->getTitre(),
+                        $event->getDate(),
+                        $event->getLieu()
+                    );
+                } catch (Exception $emailError) {
+                    error_log('Email sending error: ' . $emailError->getMessage());
+                    // Continue même si l'email échoue - l'inscription est confirmée
+                }
+                
+                $total = $this->countInscriptions($idEvenement);
+                echo json_encode([
+                    'success' => true,
+                    'message' => "Inscription confirmée pour {$prenom} {$nom} ! Un email de confirmation a été envoyé.",
+                    'inscrits' => $total,
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'inscription.']);
+            }
+
+        } catch (Exception $e) {
+            error_log('Inscription error: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Erreur serveur : ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /**
+     * Register user for event (old form-based view — kept for compatibility)
      */
     public function register($id) {
         try {

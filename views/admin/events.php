@@ -1,10 +1,18 @@
 <?php
+
 if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
     $requestUri = $_SERVER['REQUEST_URI'];
     $redirectUrl = preg_replace('@/views/admin(?:/.*)?$@', '/projetweb_avec_evenements/public/index.php/admin/events', $requestUri);
     header('Location: ' . $redirectUrl);
     exit;
 }
+
+$scriptName = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
+$baseDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+if ($baseDir === '.' || $baseDir === '/') {
+    $baseDir = '';
+}
+$indexBase = $baseDir . '/index.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -506,6 +514,9 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
   </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -518,16 +529,12 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
   </div>
   <div class="sidebar-section">
     <p class="sidebar-section-label">Tableau de bord</p>
-    <a class="sidebar-link" href="/projetweb_avec_evenements/public/index.php/admin">
-      <i class="fa-solid fa-users"></i>
-      <span>Utilisateurs</span>
-    </a>
-    <a class="sidebar-link active">
+    <a class="sidebar-link" href="<?php echo htmlspecialchars($indexBase . '/admin/events'); ?>">
       <i class="fa-solid fa-calendar-days"></i>
       <span>Événements</span>
     </a>
-    <a href="/projetweb_avec_evenements/public/index.php/admin/inscriptions" class="sidebar-link">
-      <i class="fa-solid fa-clipboard"></i>
+    <a class="sidebar-link" href="<?php echo htmlspecialchars($indexBase . '/admin/inscriptions'); ?>">
+      <i class="fa-solid fa-clipboard-list"></i>
       <span>Inscriptions</span>
     </a>
   </div>
@@ -567,6 +574,14 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
   <!-- CONTENT -->
   <div class="content">
 
+    <!-- STATS CHART -->
+    <div class="table-card" style="padding: 24px; margin-bottom: 24px;">
+      <h3 style="font-size: 16px; font-weight: 600; color: var(--navy); margin-bottom: 20px;">Statistiques des Événements selon le Lieu</h3>
+      <div style="height: 320px; width: 100%;">
+        <canvas id="locationChart"></canvas>
+      </div>
+    </div>
+
     <!-- TABLE -->
     <div class="table-card">
       <div class="table-header">
@@ -575,6 +590,9 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
           <div class="table-subtitle" id="table-count">0 événements trouvés</div>
         </div>
         <div class="table-controls">
+          <button class="btn-outline-sm" onclick="exportToPDF()" style="border-color: var(--danger); color: var(--danger);">
+            <i class="fa fa-file-pdf"></i> Exporter PDF
+          </button>
           <button class="btn-primary" onclick="openCreateModal()">
             <i class="fa fa-plus"></i> Ajouter
           </button>
@@ -698,6 +716,8 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
     </div>
   </div>
 </div>
+
+
 
 <!-- Toast Notification -->
 <div class="toast-container" id="toast-container"></div>
@@ -930,6 +950,7 @@ function closeDeleteModal() {
   eventToDelete = null;
 }
 
+
 function confirmDelete() {
   if (!eventToDelete) return;
   window.location.href = getAdminIndexPath() + '/admin/deleteEvent/' + eventToDelete;
@@ -1149,7 +1170,112 @@ if (params.get('error')) {
   showToast(msg, 'error');
 }
 
+// Export to PDF
+function exportToPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  // Titre
+  doc.setFontSize(18);
+  doc.setTextColor(11, 31, 75);
+  doc.text("Liste des Événements - Jobyfind", 14, 22);
+  
+  // Date de génération
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text("Généré le : " + new Date().toLocaleDateString('fr-FR') + " à " + new Date().toLocaleTimeString('fr-FR'), 14, 30);
+
+  // Préparation des données depuis eventsData
+  const tableData = [];
+  eventsData.forEach(e => {
+    tableData.push([
+      e.titre,
+      new Date(e.date).toLocaleDateString('fr-FR'),
+      e.lieu,
+      e.idOrganisateur
+    ]);
+  });
+
+  // Création du tableau PDF
+  doc.autoTable({
+    startY: 38,
+    head: [['Titre', 'Date', 'Lieu', 'Organisateur ID']],
+    body: tableData,
+    theme: 'grid',
+    headStyles: { fillColor: [45, 121, 255] },
+    styles: { font: 'helvetica', fontSize: 10 }
+  });
+
+  // Sauvegarde
+  doc.save('evenements_jobyfind.pdf');
+  showToast('Export PDF réussi !', 'success');
+}
+
+// Render location chart
+function renderLocationChart() {
+  const locationCounts = {};
+  eventsData.forEach(e => {
+    const loc = e.lieu ? e.lieu.trim() : 'Inconnu';
+    if (loc === '') return;
+    locationCounts[loc] = (locationCounts[loc] || 0) + 1;
+  });
+
+  const labels = Object.keys(locationCounts);
+  const data = Object.values(locationCounts);
+
+  const ctx = document.getElementById('locationChart').getContext('2d');
+  
+  if (window.locationChartInstance) {
+    window.locationChartInstance.destroy();
+  }
+
+  window.locationChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Nombre d\'événements',
+        data: data,
+        backgroundColor: [
+          'rgba(45, 121, 255, 0.8)',
+          'rgba(34, 197, 94, 0.8)',
+          'rgba(245, 158, 11, 0.8)',
+          'rgba(239, 68, 68, 0.8)',
+          'rgba(139, 92, 246, 0.8)',
+          'rgba(14, 165, 233, 0.8)',
+          'rgba(236, 72, 153, 0.8)'
+        ],
+        borderColor: 'transparent',
+        borderWidth: 0,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          padding: 12,
+          backgroundColor: 'rgba(11, 31, 75, 0.9)',
+          titleFont: { size: 14, family: "'DM Sans', sans-serif" },
+          bodyFont: { size: 13, family: "'DM Sans', sans-serif" },
+          cornerRadius: 8,
+          displayColors: false
+        }
+      }
+    }
+  });
+}
+
 // Initialize
+renderLocationChart();
 filterEventTable();
 
 // Initialize Flatpickr for date inputs

@@ -1,50 +1,10 @@
 <?php
 require_once __DIR__ . '/../models/Event.php';
-require_once __DIR__ . '/../models/User.php';
 
 class AdminController extends Controller {
 
     public function __construct() {
         // Initialization if needed
-    }
-
-    /**
-     * Resolve organiser text to a valid utilisateur ID.
-     * If the organiser value is numeric, use it directly.
-     * Otherwise create a new utilisateur entry based on the organiser name.
-     */
-    private function resolveOrganizerId($organizerInput) {
-        $organizerInput = trim($organizerInput);
-        if ($organizerInput === '') {
-            return null;
-        }
-
-        if (is_numeric($organizerInput)) {
-            return (int) $organizerInput;
-        }
-
-        $email = strtolower(preg_replace('/[^a-z0-9]+/', '.', $organizerInput));
-        $email = trim($email, '.') . '@organisateur.local';
-
-        $existingUser = User::getByEmail($email);
-        if ($existingUser) {
-            return $existingUser->getId();
-        }
-
-        $parts = preg_split('/\s+/', $organizerInput);
-        $prenom = $parts[0] ?? 'Organisateur';
-        $nom = isset($parts[1]) ? implode(' ', array_slice($parts, 1)) : 'Nom';
-
-        $user = new User([
-            'prenom' => $prenom,
-            'nom' => $nom,
-            'email' => $email,
-            'role' => 'Entrepreneur',
-            'status' => 'Actif'
-        ]);
-
-        $createdUser = $user->save();
-        return $createdUser ? $createdUser->getId() : null;
     }
 
     /**
@@ -60,23 +20,6 @@ class AdminController extends Controller {
     public function events() {
         $events = $this->fetchAllEvents();
         $this->render('admin/events', ['events' => $events]);
-    }
-
-    /**
-     * Display inscriptions management page
-     */
-    public function inscriptions() {
-        require_once __DIR__ . '/../models/Inscription.php';
-        $inscriptions = Inscription::getAll();
-        $users = $this->fetchAllUsers();
-        $events = $this->fetchAllEvents();
-        $statuses = Inscription::getAllowedStatuses();
-        $this->render('admin/inscriptions', [
-            'inscriptions' => $inscriptions,
-            'users' => $users,
-            'events' => $events,
-            'statuses' => $statuses
-        ]);
     }
 
     /**
@@ -142,23 +85,10 @@ class AdminController extends Controller {
             }
         }
 
-        // idOrganisateur: required - positive integer OR non-empty string
-        if (!isset($data['idOrganisateur']) || empty(trim($data['idOrganisateur'] ?? ''))) {
-            $errors[] = 'L\'ID organisateur est requis';
-        } else {
-            $idOrgValue = trim($data['idOrganisateur']);
-            $idOrgNum = filter_var($idOrgValue, FILTER_VALIDATE_INT);
-            
-            // If numeric, must be positive integer > 0
-            if ($idOrgNum !== false) {
-                if ($idOrgNum <= 0) {
-                    $errors[] = 'Si numérique, l\'ID organisateur doit être un entier positif (> 0)';
-                }
-            }
-            // If string, must be at least 2 characters
-            else if (strlen($idOrgValue) < 2) {
-                $errors[] = 'L\'ID organisateur doit être soit un chiffre positif, soit au moins 2 caractères';
-            }
+        // idOrganisateur: optional - can be text or number
+        $idOrgValue = trim($data['idOrganisateur'] ?? '');
+        if ($idOrgValue !== '' && strlen($idOrgValue) < 2 && !is_numeric($idOrgValue)) {
+            $errors[] = 'L\'ID organisateur doit être soit un chiffre, soit au moins 2 caractères';
         }
 
         return $errors;
@@ -185,40 +115,12 @@ class AdminController extends Controller {
                     return;
                 }
 
-                $idOrganisateur = isset($_POST['idOrganisateur']) ? (int)$_POST['idOrganisateur'] : null;
-                
-                // Check if organizer exists; if not, try to reuse an existing user by generated email
-                if ($idOrganisateur) {
-                    $organizer = User::getById($idOrganisateur);
-                    if (!$organizer) {
-                        $organizerEmail = 'organizer-' . $idOrganisateur . '@organizer.local';
-                        $existingUser = User::getByEmail($organizerEmail);
-
-                        if ($existingUser) {
-                            $idOrganisateur = $existingUser->getId();
-                        } else {
-                            // Create a new user as organizer
-                            $newUser = new User([
-                                'prenom' => 'Organisateur',
-                                'nom' => 'ID ' . $idOrganisateur,
-                                'email' => $organizerEmail,
-                                'role' => 'Entrepreneur',
-                                'status' => 'Actif'
-                            ]);
-                            $createdUser = $newUser->save();
-                            if ($createdUser) {
-                                $idOrganisateur = $createdUser->getId();
-                            }
-                        }
-                    }
-                }
-
                 $event = new Event([
                     'titre' => $_POST['titre'] ?? '',
                     'description' => $_POST['description'] ?? '',
                     'date' => $_POST['date'] ?? '',
                     'lieu' => $_POST['lieu'] ?? '',
-                    'idOrganisateur' => $idOrganisateur
+                    'idOrganisateur' => $_POST['idOrganisateur'] ?? ''
                 ]);
 
                 error_log('storeEvent: Creating event with data: ' . json_encode($event->toArray()));
@@ -290,7 +192,7 @@ class AdminController extends Controller {
                 $event->setDescription($_POST['description'] ?? '');
                 $event->setDate($_POST['date'] ?? '');
                 $event->setLieu($_POST['lieu'] ?? '');
-                $event->setIdOrganisateur(isset($_POST['idOrganisateur']) ? (int)$_POST['idOrganisateur'] : null);
+                $event->setIdOrganisateur($_POST['idOrganisateur'] ?? '');
 
                 $result = $this->persistEvent($event);
                 
@@ -336,94 +238,6 @@ class AdminController extends Controller {
     }
 
     /**
-     * Create new user (store)
-     */
-    public function storeUser() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            try {
-                // Check if email already exists
-                $existing = User::getByEmail($_POST['email'] ?? '');
-                if ($existing) {
-                    $this->redirect('/admin?error=1&msg=Email already exists');
-                    return;
-                }
-
-                $user = new User([
-                    'prenom' => $_POST['prenom'] ?? '',
-                    'nom' => $_POST['nom'] ?? '',
-                    'email' => $_POST['email'] ?? '',
-                    'role' => $_POST['role'] ?? '',
-                    'status' => $_POST['status'] ?? 'Actif',
-                    'date' => date('d M Y'),
-                    'last' => 'Jamais'
-                ]);
-
-                $result = $user->save();
-                
-                if ($result) {
-                    $this->redirect('/admin?success=1&action=create');
-                } else {
-                    $this->redirect('/admin?error=1');
-                }
-            } catch (Exception $e) {
-                error_log('Error creating user: ' . $e->getMessage());
-                $this->redirect('/admin?error=1&msg=' . urlencode($e->getMessage()));
-            }
-        }
-    }
-
-    /**
-     * Update user
-     */
-    public function updateUser($id) {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            try {
-                $user = User::getById($id);
-                
-                if (!$user) {
-                    $this->redirect('/admin?error=1&msg=User not found');
-                    return;
-                }
-
-                $user->setPrenom($_POST['prenom'] ?? '');
-                $user->setNom($_POST['nom'] ?? '');
-                $user->setEmail($_POST['email'] ?? '');
-                $user->setRole($_POST['role'] ?? '');
-                $user->setStatus($_POST['status'] ?? '');
-
-                $result = $user->save();
-                
-                if ($result) {
-                    $this->redirect('/admin?success=1&action=update');
-                } else {
-                    $this->redirect('/admin?error=1');
-                }
-            } catch (Exception $e) {
-                error_log('Error updating user: ' . $e->getMessage());
-                $this->redirect('/admin?error=1&msg=' . urlencode($e->getMessage()));
-            }
-        }
-    }
-
-    /**
-     * Delete user
-     */
-    public function deleteUser($id) {
-        try {
-            $result = User::delete($id);
-            
-            if ($result) {
-                $this->redirect('/admin?success=1&action=delete');
-            } else {
-                $this->redirect('/admin?error=1');
-            }
-        } catch (Exception $e) {
-            error_log('Error deleting user: ' . $e->getMessage());
-            $this->redirect('/admin?error=1&msg=' . urlencode($e->getMessage()));
-        }
-    }
-
-    /**
      * Get events for category (via API)
      */
     public function getEventsByCategory($category) {
@@ -451,21 +265,95 @@ class AdminController extends Controller {
         }
     }
 
+    /**
+     * Display inscriptions management page
+     */
+    public function inscriptions() {
+        $inscriptions = $this->fetchAllInscriptions();
+        $this->render('admin/inscriptions', ['inscriptions' => $inscriptions]);
+    }
+
+    /**
+     * Update inscription (store changes)
+     */
+    public function updateInscription($id) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $inscription = $this->fetchInscriptionById($id);
+                
+                if (!$inscription) {
+                    $this->redirect('/admin/inscriptions?error=1&msg=Inscription not found');
+                    return;
+                }
+
+                // Validate data
+                $errors = [];
+                if (empty(trim($_POST['nom'] ?? ''))) {
+                    $errors[] = 'Le nom est requis';
+                }
+                if (empty(trim($_POST['prenom'] ?? ''))) {
+                    $errors[] = 'Le prénom est requis';
+                }
+                if (empty(trim($_POST['email'] ?? ''))) {
+                    $errors[] = 'L\'email est requis';
+                }
+                if (!filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL)) {
+                    $errors[] = 'L\'email n\'est pas valide';
+                }
+
+                if (!empty($errors)) {
+                    $errorMsg = implode(', ', $errors);
+                    $this->redirect('/admin/inscriptions?error=1&msg=' . urlencode($errorMsg));
+                    return;
+                }
+
+                $inscription->setNom(trim($_POST['nom'] ?? ''));
+                $inscription->setPrenom(trim($_POST['prenom'] ?? ''));
+                $inscription->setEmail(trim($_POST['email'] ?? ''));
+                $inscription->setStatut($_POST['statut'] ?? 'confirmée');
+
+                $result = $this->updateInscriptionData($inscription);
+                
+                if ($result) {
+                    $this->redirect('/admin/inscriptions?success=1&action=update');
+                } else {
+                    $this->redirect('/admin/inscriptions?error=1');
+                }
+            } catch (Exception $e) {
+                error_log('Error updating inscription: ' . $e->getMessage());
+                $this->redirect('/admin/inscriptions?error=1&msg=' . urlencode($e->getMessage()));
+            }
+        }
+    }
+
+    /**
+     * Delete inscription
+     */
+    public function deleteInscription($id) {
+        try {
+            $inscription = $this->fetchInscriptionById($id);
+            
+            if (!$inscription) {
+                $this->redirect('/admin/inscriptions?error=1&msg=Inscription not found');
+                return;
+            }
+
+            $result = $this->removeInscription($id);
+            
+            if ($result) {
+                $this->redirect('/admin/inscriptions?success=1&action=delete');
+            } else {
+                $this->redirect('/admin/inscriptions?error=1');
+            }
+        } catch (Exception $e) {
+            error_log('Error deleting inscription: ' . $e->getMessage());
+            $this->redirect('/admin/inscriptions?error=1&msg=' . urlencode($e->getMessage()));
+        }
+    }
+
     // Legacy methods for backward compatibility
     public function getEvents() {
         return $this->fetchAllEvents();
-    }
-
-    public function getUsers() {
-        return User::getAll();
-    }
-
-    private function findEvent($id) {
-        return $this->fetchEventById($id);
-    }
-
-    private function findUser($id) {
-        return User::getById($id);
     }
 }
 ?>

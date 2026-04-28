@@ -6,7 +6,6 @@ class Router
         '' => ['controller' => 'EventsController', 'action' => 'index'],
         'events' => ['controller' => 'EventsController', 'action' => 'index'],
         'admin' => ['controller' => 'AdminController', 'action' => 'index'],
-        'inscriptions' => ['controller' => 'InscriptionsController', 'action' => 'index'],
     ];
 
     public function dispatch(string $requestUri, string $scriptName): void
@@ -27,16 +26,26 @@ class Router
     private function extractPath(string $requestUri, string $scriptName): string
     {
         $path = parse_url($requestUri, PHP_URL_PATH) ?? '';
-        $baseDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
 
+        // Strip the base directory (e.g. /projetweb_avec_evenements_comp/public)
+        $baseDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
         if ($baseDir !== '' && $baseDir !== '.' && strpos($path, $baseDir) === 0) {
             $path = substr($path, strlen($baseDir));
         }
 
         $path = trim($path, '/');
 
+        // Remove index.php prefix if present (when mod_rewrite is off)
         if (strpos($path, 'index.php') === 0) {
             $path = trim(substr($path, strlen('index.php')), '/');
+        }
+
+        // If mod_rewrite is disabled the URL still contains the literal "public"
+        // as the first segment (e.g. public/admin/events). Strip it.
+        if (strncasecmp($path, 'public/', 7) === 0) {
+            $path = substr($path, 7);
+        } elseif (strcasecmp($path, 'public') === 0) {
+            $path = '';
         }
 
         return $path;
