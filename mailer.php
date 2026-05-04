@@ -1,4 +1,7 @@
 <?php
+if (file_exists(__DIR__ . '/config.php')) {
+    require_once __DIR__ . '/config.php';
+}
 /**
  * ═══════════════════════════════════════════════════════════
  *  MAILER - Notification par email via BREVO (Sendinblue)
@@ -8,7 +11,7 @@
 class Mailer {
 
     // ── Configuration Brevo ──
-    private static $apiKey = 'YOUR_API_KEY_HERE'; // TODO: Replace with your actual Brevo API Key
+    private static $apiKey = ''; // TODO: Replace with your actual Brevo API Key if not using config.php
     private static $fromEmail = 'malekchhoumi1920@gmail.com'; // Votre email vérifié
     private static $fromName = 'JobyFind Notifications';
     private static $adminEmail = 'malekchhoumi1920@gmail.com';
@@ -38,8 +41,9 @@ class Mailer {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $keyToUse = defined('BREVO_API_KEY') ? BREVO_API_KEY : self::$apiKey;
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'api-key: ' . self::$apiKey,
+            'api-key: ' . $keyToUse,
             'Content-Type: application/json',
             'Accept: application/json'
         ]);

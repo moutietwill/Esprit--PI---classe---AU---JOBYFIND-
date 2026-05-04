@@ -2,11 +2,13 @@
 require_once __DIR__ . '/../controller/BlogController.php';
 require_once __DIR__ . '/../controller/CategoryController.php';
 require_once __DIR__ . '/../controller/CommentController.php';
+require_once __DIR__ . '/../controller/StoryController.php';
 require_once __DIR__ . '/../mailer.php';
 
 $blogController = new BlogController();
 $catController = new CategoryController();
 $commentController = new CommentController();
+$storyController = new StoryController();
 
 $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
 
@@ -58,6 +60,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         header("Location: backoffice.php?page=posts");
         exit;
+    } elseif ($page === 'stories') {
+        $storyFile = isset($_FILES['media_image']) ? $_FILES['media_image'] : null;
+        try {
+            if ($_POST['action'] === 'add') {
+                $story = new StoryModel(
+                    $_POST['title'] ?? '',
+                    $_POST['content'] ?? '',
+                    $_POST['post_id'] ?? null,
+                    $_POST['cta_label'] ?? 'Lire le blog',
+                    null,
+                    $_POST['status'] ?? 'published',
+                    $_POST['starts_at'] ?? '',
+                    $_POST['expires_at'] ?? ''
+                );
+                $storyController->AjouterStory($story, $storyFile);
+            } elseif ($_POST['action'] === 'edit' && !empty($_POST['id'])) {
+                $story = new StoryModel(
+                    $_POST['title'] ?? '',
+                    $_POST['content'] ?? '',
+                    $_POST['post_id'] ?? null,
+                    $_POST['cta_label'] ?? 'Lire le blog',
+                    $_POST['old_media_image'] ?? null,
+                    $_POST['status'] ?? 'published',
+                    $_POST['starts_at'] ?? '',
+                    $_POST['expires_at'] ?? ''
+                );
+                $storyController->ModifierStory($story, $_POST['id'], $storyFile);
+            } elseif ($_POST['action'] === 'delete' && !empty($_POST['id'])) {
+                $storyController->SupprimerStory($_POST['id']);
+            }
+        } catch (Exception $e) {
+            $message = addslashes($e->getMessage());
+            echo "<script>alert('Erreur story: {$message}'); window.location.href='backoffice.php?page=stories';</script>";
+            exit;
+        }
+
+        header("Location: backoffice.php?page=stories");
+        exit;
     } elseif ($page === 'comments') {
         $badWords = ['merde', 'con', 'putain', 'salope', 'idiot', 'connard', 'bâtard', 'stupide'];
         $hasBadWords = false;
@@ -103,6 +143,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 $categoriesList = $catController->getCategories();
 $commentsList = $commentController->getComments();
 $commentsTotal = $commentController->countComments();
+$storiesList = $storyController->AfficherStories();
+$activeStoriesTotal = $storyController->CountActiveStories();
+$storyViewsTotal = $storyController->GetTotalStoryViews();
+$topStories = $storyController->GetTopStories(5);
 
 $catId = isset($_GET['cat_id']) ? $_GET['cat_id'] : '';
 $sort = isset($_GET['sort']) ? $_GET['sort'] : '';
@@ -118,6 +162,20 @@ if (!empty($search)) {
 } else {
     $postsList = $blogController->AfficherPosts();
 }
+$allPostsForSelect = $blogController->AfficherPosts();
+
+$advancedStats = $blogController->GetAdvancedStats(7, 5);
+$totalViews = $advancedStats['total_views'];
+$totalLikes = $advancedStats['total_likes'];
+$topViewedPosts = $advancedStats['top_viewed'];
+$topLikedPosts = $advancedStats['top_liked'];
+$topCommentedPosts = $advancedStats['top_commented'];
+$commentsEvolution = $advancedStats['comments_evolution'];
+$maxDailyComments = 1;
+foreach ($commentsEvolution as $dayStats) {
+    $maxDailyComments = max($maxDailyComments, (int) $dayStats['comments_count']);
+}
+
 $action = isset($_GET['action']) ? $_GET['action'] : 'list';
 ?>
 <!DOCTYPE html>
@@ -166,15 +224,34 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'list';
     .btn-light { background: #e5e7eb; color: #374151; }
     
     /* Stats */
-    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 24px; margin-bottom: 32px; }
     .stat-card { background: var(--surface); border-radius: var(--radius); padding: 24px; display: flex; align-items: center; gap: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .stat-icon { font-size: 28px; width: 48px; height: 48px; display: flex; align-items:center; justify-content:center; border-radius: 8px; }
     .stat-icon.blue { color: var(--blue); background: #eff6ff; }
     .stat-icon.green { color: #10b981; background: #ecfdf5; }
     .stat-icon.orange { color: #f59e0b; background: #fffbeb; }
+    .stat-icon.pink { color: #e11d48; background: #fff1f2; }
+    .stat-icon.purple { color: #7c3aed; background: #f5f3ff; }
     .stat-info { display: flex; flex-direction: column; }
     .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px; }
     .stat-value { font-size: 24px; font-weight: 700; color: var(--text-main); line-height: 1; }
+    .export-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .analytics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-bottom: 30px; }
+    .analytics-card { background: var(--surface); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(0,0,0,0.05); overflow: hidden; }
+    .analytics-card.full { grid-column: 1 / -1; }
+    .analytics-card-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 700; }
+    .analytics-list { padding: 8px 0; }
+    .analytics-row { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+    .analytics-row:last-child { border-bottom: none; }
+    .analytics-title { font-size: 13px; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .analytics-value { font-size: 13px; font-weight: 700; color: var(--blue); white-space: nowrap; }
+    .chart-bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; align-items: end; min-height: 190px; padding: 22px 24px 18px; }
+    .chart-bar-item { display: flex; flex-direction: column; align-items: center; gap: 8px; height: 160px; justify-content: flex-end; }
+    .chart-bar { width: 100%; max-width: 44px; min-height: 6px; border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, var(--blue), #60a5fa); }
+    .chart-value { font-size: 12px; font-weight: 700; color: var(--text-main); }
+    .chart-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+    .empty-analytics { padding: 20px; color: var(--text-muted); font-size: 13px; text-align: center; }
+    @media (max-width: 980px) { .analytics-grid { grid-template-columns: 1fr; } }
 
     /* Tables */
     .table-section { background: var(--surface); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 30px; }
@@ -192,6 +269,12 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'list';
     /* Badges */
     .status-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #dcfce7; color: #166534; text-transform: uppercase; }
     .status-draft { background: #f3f4f6; color: #4b5563; }
+    .status-expired { background: #fee2e2; color: #991b1b; }
+    .status-scheduled { background: #dbeafe; color: #1d4ed8; }
+    .story-thumb { width: 54px; height: 54px; border-radius: 8px; object-fit: cover; background: #eff6ff; color: var(--blue); display: inline-flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .story-cell { display: flex; align-items: center; gap: 12px; min-width: 220px; }
+    .story-title { color: var(--text-main); display: block; font-weight: 700; }
+    .story-desc { color: var(--text-muted); display: block; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* Forms */
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -226,9 +309,20 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'list';
       <a href="backoffice.php?page=posts" class="nav-link <?= $page === 'posts' ? 'active' : '' ?>">
         <i class="fas fa-book"></i> Blogs
       </a>
+      <a href="backoffice.php?page=stories" class="nav-link <?= $page === 'stories' ? 'active' : '' ?>">
+        <i class="fas fa-circle-play"></i> Stories
+        <span class="badge-red"><?= $activeStoriesTotal ?></span>
+      </a>
       <a href="backoffice.php?page=comments" class="nav-link <?= $page === 'comments' ? 'active' : '' ?>">
         <i class="fas fa-comments"></i> Commentaires
         <span class="badge-red"><?= $commentsTotal ?></span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">OUTILS IA</div>
+      <a href="backoffice.php?page=posts&action=add" class="nav-link <?= ($page === 'posts' && $action === 'add') ? 'active' : '' ?>" style="<?= ($page === 'posts' && $action === 'add') ? '' : 'background:linear-gradient(135deg,rgba(139,92,246,0.18),rgba(29,78,216,0.12));color:#a78bfa;' ?>">
+        <i class="fas fa-wand-magic-sparkles"></i> Générer un Blog ✨
       </a>
     </div>
 
@@ -253,6 +347,10 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'list';
           <h1 class="page-title">Tableau de Bord</h1>
           <p class="page-subtitle">Bienvenue sur votre espace d'administration</p>
         </div>
+        <div class="export-actions">
+          <a href="../export_stats_pdf.php" class="btn" target="_blank"><i class="fas fa-file-pdf"></i> Export PDF</a>
+          <a href="../export_stats_excel.php" class="btn btn-light"><i class="fas fa-file-excel"></i> Export Excel</a>
+        </div>
       </div>
 
       <div class="stats-grid">
@@ -271,10 +369,122 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'list';
           </div>
         </div>
         <div class="stat-card">
+          <div class="stat-icon blue"><i class="fas fa-circle-play"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Stories actives</span>
+            <span class="stat-value"><?= $activeStoriesTotal ?></span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple"><i class="fas fa-eye"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Vues</span>
+            <span class="stat-value"><?= $totalViews ?></span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon pink"><i class="fas fa-heart"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Likes</span>
+            <span class="stat-value"><?= $totalLikes ?></span>
+          </div>
+        </div>
+        <div class="stat-card">
           <div class="stat-icon orange"><i class="fas fa-comments"></i></div>
           <div class="stat-info">
             <span class="stat-label">Commentaires</span>
             <span class="stat-value"><?= $commentsTotal ?></span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple"><i class="fas fa-bolt"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Vues stories</span>
+            <span class="stat-value"><?= $storyViewsTotal ?></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="analytics-card-header">
+            <span><i class="fas fa-eye" style="color: var(--blue); margin-right: 8px;"></i>Nombre de vues par post</span>
+          </div>
+          <div class="analytics-list">
+            <?php if (empty($topViewedPosts)): ?>
+              <div class="empty-analytics">Aucune donnée de vues.</div>
+            <?php else: foreach ($topViewedPosts as $postStat): ?>
+              <div class="analytics-row">
+                <span class="analytics-title"><?= htmlspecialchars($postStat['title']) ?></span>
+                <span class="analytics-value"><?= (int) $postStat['views_count'] ?> vues</span>
+              </div>
+            <?php endforeach; endif; ?>
+          </div>
+        </div>
+
+        <div class="analytics-card">
+          <div class="analytics-card-header">
+            <span><i class="fas fa-heart" style="color: #e11d48; margin-right: 8px;"></i>Posts les plus likés</span>
+          </div>
+          <div class="analytics-list">
+            <?php if (empty($topLikedPosts)): ?>
+              <div class="empty-analytics">Aucun like pour le moment.</div>
+            <?php else: foreach ($topLikedPosts as $postStat): ?>
+              <div class="analytics-row">
+                <span class="analytics-title"><?= htmlspecialchars($postStat['title']) ?></span>
+                <span class="analytics-value"><?= (int) $postStat['likes_count'] ?> likes</span>
+              </div>
+            <?php endforeach; endif; ?>
+          </div>
+        </div>
+
+        <div class="analytics-card">
+          <div class="analytics-card-header">
+            <span><i class="fas fa-circle-play" style="color: #7c3aed; margin-right: 8px;"></i>Stories les plus vues</span>
+          </div>
+          <div class="analytics-list">
+            <?php if (empty($topStories)): ?>
+              <div class="empty-analytics">Aucune story pour le moment.</div>
+            <?php else: foreach ($topStories as $storyStat): ?>
+              <div class="analytics-row">
+                <span class="analytics-title"><?= htmlspecialchars($storyStat['title']) ?></span>
+                <span class="analytics-value"><?= (int) $storyStat['views_count'] ?> vues</span>
+              </div>
+            <?php endforeach; endif; ?>
+          </div>
+        </div>
+
+        <div class="analytics-card">
+          <div class="analytics-card-header">
+            <span><i class="fas fa-comments" style="color: #f59e0b; margin-right: 8px;"></i>Formations les plus commentées</span>
+          </div>
+          <div class="analytics-list">
+            <?php if (empty($topCommentedPosts)): ?>
+              <div class="empty-analytics">Aucun commentaire pour le moment.</div>
+            <?php else: foreach ($topCommentedPosts as $postStat): ?>
+              <div class="analytics-row">
+                <span class="analytics-title"><?= htmlspecialchars($postStat['title']) ?></span>
+                <span class="analytics-value"><?= (int) $postStat['comments_count'] ?> commentaires</span>
+              </div>
+            <?php endforeach; endif; ?>
+          </div>
+        </div>
+
+        <div class="analytics-card">
+          <div class="analytics-card-header">
+            <span><i class="fas fa-chart-column" style="color: #10b981; margin-right: 8px;"></i>Evolution des commentaires</span>
+            <span style="font-size: 12px; color: var(--text-muted);">7 derniers jours</span>
+          </div>
+          <div class="chart-bars">
+            <?php foreach ($commentsEvolution as $dayStats): 
+              $barHeight = max(6, round(((int) $dayStats['comments_count'] / $maxDailyComments) * 120));
+            ?>
+              <div class="chart-bar-item">
+                <span class="chart-value"><?= (int) $dayStats['comments_count'] ?></span>
+                <div class="chart-bar" style="height: <?= $barHeight ?>px;"></div>
+                <span class="chart-label"><?= htmlspecialchars($dayStats['label']) ?></span>
+              </div>
+            <?php endforeach; ?>
           </div>
         </div>
       </div>
@@ -396,74 +606,128 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'list';
       </div>
 
       <?php if ($action === 'add' || $action === 'edit'): ?>
-          <div class="table-section">
-              <?php
-              $editPost = null;
-              if ($action === 'edit' && isset($_GET['id'])) {
-                  $editPost = $blogController->RecupererPost($_GET['id']);
-              }
-              ?>
-              <div class="table-header">
-                  <?= $action === 'edit' ? "Modifier la Formation" : "Créer une Formation" ?>
-                  <a href="backoffice.php?page=posts" class="btn btn-light"><i class="fas fa-arrow-left"></i> Retour</a>
-              </div>
-              <div style="padding: 24px;">
-                  <form method="POST" action="backoffice.php?page=posts" enctype="multipart/form-data" id="formationForm">
-                      <input type="hidden" name="action" value="<?= $action ?>">
-                      <?php if ($action === 'edit'): ?>
-                          <input type="hidden" name="id" value="<?= $editPost['id'] ?>">
-                          <input type="hidden" name="old_cover_image" value="<?= $editPost['cover_image'] ?>">
-                      <?php endif; ?>
 
-                      <div class="form-grid">
-                          <div class="form-group full">
-                              <label>Titre de la formation *</label>
-                              <input type="text" name="title" id="titleInput" value="<?= $editPost ? htmlspecialchars($editPost['title']) : '' ?>">
-                              <div id="titleError" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: none;"></div>
-                          </div>
-                          
-                          <div class="form-group">
-                              <label>Catégorie *</label>
-                              <select name="category_id" id="categoryInput">
-                                  <option value="">Choisir une catégorie...</option>
-                                  <?php foreach($categoriesList as $cat): ?>
-                                      <option value="<?= $cat['id'] ?>" <?= ($editPost && $editPost['category_id'] == $cat['id']) ? 'selected' : '' ?>>
-                                          <?= htmlspecialchars($cat['name']) ?>
-                                      </option>
-                                  <?php endforeach; ?>
-                              </select>
-                              <div id="categoryError" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: none;"></div>
-                          </div>
 
-                          <div class="form-group full">
-                              <label>Description *</label>
-                              <textarea name="content" id="contentInput"><?= $editPost ? htmlspecialchars($editPost['content']) : '' ?></textarea>
-                              <div id="contentError" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: none;"></div>
-                          </div>
 
-                          <div class="form-group">
-                              <label>Statut</label>
-                              <select name="status">
-                                  <option value="published" <?= ($editPost && $editPost['status'] == 'published') ? 'selected' : '' ?>>Publié</option>
-                                  <option value="draft" <?= ($editPost && $editPost['status'] == 'draft') ? 'selected' : '' ?>>Brouillon</option>
-                              </select>
-                          </div>
+          <?php if ($action === 'add'): ?>
+          <div id="aiAssistantPanel" style="
+              background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+              border-radius: 16px;
+              padding: 35px;
+              margin-bottom: 30px;
+              box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+              position: relative;
+              border: 1px solid rgba(255,255,255,0.1);
+          ">
+              <div style="position:relative; z-index:2;">
+                  <div style="display:flex; align-items:center; gap:15px; margin-bottom:25px;">
+                      <div style="width:50px; height:50px; background:rgba(255,255,255,0.1); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px;">✨</div>
+                      <div>
+                          <h2 style="color:#fff; font-size:20px; font-weight:700; margin:0;">Générateur de Blog Intelligent</h2>
+                          <p style="color:rgba(255,255,255,0.6); font-size:14px; margin:5px 0 0;">L'IA s'occupe de tout : titre, contenu et publication immédiate.</p>
+                      </div>
+                  </div>
 
-                          <div class="form-group">
-                              <label>Image de couverture</label>
-                              <input type="file" name="cover_image" accept="image/*">
-                              <?php if($editPost && $editPost['cover_image']): ?>
-                                  <br><small>Image actuelle: <?= htmlspecialchars($editPost['cover_image']) ?></small>
-                              <?php endif; ?>
+                  <div style="display:grid; grid-template-columns: 1fr 200px 180px; gap:15px; align-items:flex-end;">
+                      <div>
+                          <label style="display:block; color:rgba(255,255,255,0.7); font-size:12px; font-weight:600; text-transform:uppercase; margin-bottom:10px;">Quel est le sujet du blog ?</label>
+                          <input type="text" id="aiThemeInput" placeholder="Ex: Les secrets de l'IA en 2025..." 
+                                 style="width:100%; padding:14px 18px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#fff; font-size:15px; outline:none; transition:0.3s;">
+                      </div>
+                      <div>
+                          <label style="display:block; color:rgba(255,255,255,0.7); font-size:12px; font-weight:600; text-transform:uppercase; margin-bottom:10px;">Catégorie</label>
+                          <select id="aiCategoryInput" style="width:100%; padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.1); color:#fff; outline:none; cursor:pointer;">
+                              <?php foreach($categoriesList as $cat): ?>
+                              <option value="<?= $cat['id'] ?>" style="background:#1e1b4b;"><?= htmlspecialchars($cat['name']) ?></option>
+                              <?php endforeach; ?>
+                          </select>
+                      </div>
+                      <button type="button" id="aiGenerateBtn" onclick="generateAndPublish()" 
+                              style="width:100%; padding:14px; background:#6366f1; color:#fff; border:none; border-radius:10px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:0.3s;">
+                          <i class="fas fa-magic"></i> GÉNÉRER
+                      </button>
+                  </div>
+
+                  <!-- Overlay de chargement -->
+                  <div id="aiOverlay" style="display:none; margin-top:25px; background:rgba(255,255,255,0.05); border-radius:12px; padding:20px; text-align:center;">
+                      <div class="ai-loader" style="display:inline-block; width:30px; height:30px; border:3px solid rgba(255,255,255,0.1); border-top-color:#6366f1; border-radius:50%; animation:spin 1s linear infinite;"></div>
+                      <p style="color:#fff; margin-top:10px; font-size:14px;">Création de l'article en cours...</p>
+                  </div>
+
+                  <!-- Succès -->
+                  <div id="aiSuccess" style="display:none; margin-top:25px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:12px; padding:20px;">
+                      <div style="display:flex; align-items:flex-start; gap:20px;">
+                          <div id="aiImagePreview" style="width:120px; height:80px; background:#000; border-radius:8px; overflow:hidden; border:2px solid rgba(255,255,255,0.1); flex-shrink:0;">
+                              <img src="" style="width:100%; height:100%; object-fit:cover;">
+                          </div>
+                          <div style="flex:1;">
+                              <h4 style="color:#fff; margin:0; font-size:16px;">Article & Image publiés !</h4>
+                              <p id="aiSuccessMsg" style="color:rgba(255,255,255,0.6); font-size:13px; margin:5px 0 0;"></p>
+                              <div style="display:flex; gap:10px; margin-top:15px;">
+                                  <a href="backoffice.php?page=posts" class="btn btn-light" style="padding:6px 12px; font-size:11px;">Catalogue</a>
+                                  <a id="aiEditLink" href="#" class="btn" style="padding:6px 12px; font-size:11px; background:#6366f1;">Détails</a>
+                              </div>
                           </div>
                       </div>
-                      
-                      <div style="margin-top: 20px; text-align: right;">
-                          <button type="submit" class="btn" style="padding: 12px 24px; font-size: 14px;"><i class="fas fa-save"></i> Enregistrer</button>
-                      </div>
-                  </form>
+                  </div>
               </div>
           </div>
+
+          <script>
+          function generateAndPublish() {
+              const theme = document.getElementById('aiThemeInput').value.trim();
+              const catId = document.getElementById('aiCategoryInput').value;
+              const btn = document.getElementById('aiGenerateBtn');
+              const overlay = document.getElementById('aiOverlay');
+              const success = document.getElementById('aiSuccess');
+
+              if (!theme) { alert('Veuillez saisir un thème.'); return; }
+
+              btn.disabled = true;
+              btn.style.opacity = '0.5';
+              overlay.style.display = 'block';
+              success.style.display = 'none';
+
+              const formData = new FormData();
+              formData.append('theme', theme);
+              formData.append('category_id', catId);
+              formData.append('status', 'published');
+
+              fetch('../ajax_generate_blog.php', { method: 'POST', body: formData })
+                  .then(r => r.json())
+                  .then(data => {
+                      btn.disabled = false;
+                      btn.style.opacity = '1';
+                      overlay.style.display = 'none';
+
+                      if (data.success) {
+                          // Mise à jour de l'image
+                          const img = document.querySelector('#aiImagePreview img');
+                          img.src = data.image;
+                          
+                          document.getElementById('aiSuccessMsg').textContent = `"${data.title}" a été publié avec une image personnalisée.`;
+                          document.getElementById('aiEditLink').href = `backoffice.php?page=posts&action=edit&id=${data.id}`;
+                          success.style.display = 'block';
+                          document.getElementById('aiThemeInput').value = '';
+                      } else {
+                          alert('Erreur: ' + data.message);
+                      }
+                  })
+                  .catch(err => {
+                      btn.disabled = false;
+                      btn.style.opacity = '1';
+                      overlay.style.display = 'none';
+                      alert('Erreur serveur.');
+                  });
+          }
+          </script>
+
+          <style>
+          @keyframes spin { to { transform: rotate(360deg); } }
+          </style>
+          <?php endif; ?>
+
+
 
       <?php else: ?>
           <div class="table-section">
@@ -552,6 +816,189 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'list';
                 <i class="fas fa-search" style="font-size: 24px; margin-bottom: 8px; display: block; opacity: 0.5;"></i>
                 Aucun blog ne correspond à votre recherche.
               </div>
+          </div>
+      <?php endif; ?>
+
+    <?php elseif ($page === 'stories'): ?>
+      <!-- ============================================== -->
+      <!-- VUE : STORIES                                  -->
+      <!-- ============================================== -->
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Gestion des Stories</h1>
+          <p class="page-subtitle">Mettez en avant vos blogs avec des stories temporaires.</p>
+        </div>
+        <?php if ($action === 'list'): ?>
+          <a href="backoffice.php?page=stories&action=add" class="btn"><i class="fas fa-plus"></i> Nouvelle Story</a>
+        <?php endif; ?>
+      </div>
+
+      <?php if ($action === 'add' || $action === 'edit'): ?>
+          <div class="table-section">
+              <?php
+              $editStory = null;
+              if ($action === 'edit' && isset($_GET['id'])) {
+                  $editStory = $storyController->RecupererStory($_GET['id']);
+              }
+              $defaultStartsAt = date('Y-m-d\TH:i');
+              $defaultExpiresAt = date('Y-m-d\TH:i', strtotime('+24 hours'));
+              $startsValue = $editStory ? date('Y-m-d\TH:i', strtotime($editStory['starts_at'])) : $defaultStartsAt;
+              $expiresValue = $editStory ? date('Y-m-d\TH:i', strtotime($editStory['expires_at'])) : $defaultExpiresAt;
+              ?>
+              <div class="table-header">
+                  <?= $action === 'edit' ? "Modifier la Story" : "Créer une Story" ?>
+                  <a href="backoffice.php?page=stories" class="btn btn-light"><i class="fas fa-arrow-left"></i> Retour</a>
+              </div>
+              <div style="padding: 24px;">
+                  <form method="POST" action="backoffice.php?page=stories" enctype="multipart/form-data" id="storyForm">
+                      <input type="hidden" name="action" value="<?= $action ?>">
+                      <?php if ($action === 'edit' && $editStory): ?>
+                          <input type="hidden" name="id" value="<?= $editStory['id'] ?>">
+                          <input type="hidden" name="old_media_image" value="<?= htmlspecialchars($editStory['media_image'] ?? '') ?>">
+                      <?php endif; ?>
+
+                      <div class="form-grid">
+                          <div class="form-group full">
+                              <label>Titre de la story *</label>
+                              <input type="text" name="title" id="storyTitleInput" value="<?= $editStory ? htmlspecialchars($editStory['title']) : '' ?>" maxlength="180">
+                              <div id="storyTitleError" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: none;"></div>
+                          </div>
+
+                          <div class="form-group full">
+                              <label>Texte court *</label>
+                              <textarea name="content" id="storyContentInput" maxlength="600" style="min-height: 110px;"><?= $editStory ? htmlspecialchars($editStory['content']) : '' ?></textarea>
+                              <div id="storyContentError" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: none;"></div>
+                          </div>
+
+                          <div class="form-group">
+                              <label>Blog associé</label>
+                              <select name="post_id" id="storyPostInput">
+                                  <option value="">Aucun lien</option>
+                                  <?php foreach($allPostsForSelect as $p): ?>
+                                      <option value="<?= $p['id'] ?>" <?= ($editStory && $editStory['post_id'] == $p['id']) ? 'selected' : '' ?>>
+                                          <?= htmlspecialchars($p['title']) ?>
+                                      </option>
+                                  <?php endforeach; ?>
+                              </select>
+                          </div>
+
+                          <div class="form-group">
+                              <label>Libellé du bouton</label>
+                              <input type="text" name="cta_label" id="storyCtaInput" value="<?= $editStory ? htmlspecialchars($editStory['cta_label']) : 'Voir le blog' ?>" maxlength="80">
+                          </div>
+
+                          <div class="form-group">
+                              <label>Date de début *</label>
+                              <input type="datetime-local" name="starts_at" id="storyStartsInput" value="<?= htmlspecialchars($startsValue) ?>">
+                              <div id="storyDateError" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: none;"></div>
+                          </div>
+
+                          <div class="form-group">
+                              <label>Date de fin *</label>
+                              <input type="datetime-local" name="expires_at" id="storyExpiresInput" value="<?= htmlspecialchars($expiresValue) ?>">
+                          </div>
+
+                          <div class="form-group">
+                              <label>Statut</label>
+                              <select name="status">
+                                  <option value="published" <?= ($editStory && $editStory['status'] == 'published') ? 'selected' : '' ?>>Publié</option>
+                                  <option value="draft" <?= ($editStory && $editStory['status'] == 'draft') ? 'selected' : '' ?>>Brouillon</option>
+                              </select>
+                          </div>
+
+                          <div class="form-group">
+                              <label>Image story</label>
+                              <input type="file" name="media_image" accept="image/*">
+                              <?php if($editStory && $editStory['media_image']): ?>
+                                  <br><small>Image actuelle: <?= htmlspecialchars($editStory['media_image']) ?></small>
+                              <?php endif; ?>
+                          </div>
+                      </div>
+
+                      <div style="margin-top: 20px; text-align: right;">
+                          <button type="submit" class="btn" style="padding: 12px 24px; font-size: 14px;"><i class="fas fa-save"></i> Enregistrer</button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+
+      <?php else: ?>
+          <div class="table-section">
+              <div class="table-header" style="flex-wrap: wrap; gap: 15px;">
+                  <div>Toutes les stories</div>
+                  <div style="font-size: 13px; color: var(--text-muted);">
+                      <?= $activeStoriesTotal ?> active(s) · <?= $storyViewsTotal ?> vue(s)
+                  </div>
+              </div>
+              <table>
+                  <thead>
+                      <tr>
+                          <th>STORY</th>
+                          <th>BLOG LIÉ</th>
+                          <th>PÉRIODE</th>
+                          <th>VUES</th>
+                          <th>STATUT</th>
+                          <th>ACTIONS</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      <?php if (empty($storiesList)): ?>
+                          <tr><td colspan="6" style="text-align:center;">Aucune story trouvée.</td></tr>
+                      <?php else: foreach($storiesList as $s): ?>
+                          <?php
+                          $now = time();
+                          $isDraft = $s['status'] === 'draft';
+                          $isExpired = strtotime($s['expires_at']) < $now;
+                          $isScheduled = strtotime($s['starts_at']) > $now;
+                          if ($isDraft) {
+                              $storyStatusLabel = 'BROUILLON';
+                              $storyStatusClass = 'status-draft';
+                          } elseif ($isExpired) {
+                              $storyStatusLabel = 'EXPIRÉE';
+                              $storyStatusClass = 'status-expired';
+                          } elseif ($isScheduled) {
+                              $storyStatusLabel = 'PROGRAMMÉE';
+                              $storyStatusClass = 'status-scheduled';
+                          } else {
+                              $storyStatusLabel = 'ACTIVE';
+                              $storyStatusClass = '';
+                          }
+                          ?>
+                          <tr>
+                              <td>
+                                  <div class="story-cell">
+                                      <?php if (!empty($s['media_image'])): ?>
+                                          <img class="story-thumb" src="../uploads/stories/<?= htmlspecialchars($s['media_image']) ?>" alt="<?= htmlspecialchars($s['title']) ?>">
+                                      <?php else: ?>
+                                          <span class="story-thumb"><i class="fas fa-circle-play"></i></span>
+                                      <?php endif; ?>
+                                      <span>
+                                          <span class="story-title"><?= htmlspecialchars($s['title']) ?></span>
+                                          <small class="story-desc"><?= htmlspecialchars($s['content'] ?? '') ?></small>
+                                      </span>
+                                  </div>
+                              </td>
+                              <td><?= htmlspecialchars($s['post_title'] ?? 'Aucun lien') ?></td>
+                              <td style="white-space: nowrap;">
+                                  <?= date('d/m/Y H:i', strtotime($s['starts_at'])) ?><br>
+                                  <small style="color: var(--text-muted);">jusqu'au <?= date('d/m/Y H:i', strtotime($s['expires_at'])) ?></small>
+                              </td>
+                              <td><strong><?= (int) $s['views_count'] ?></strong></td>
+                              <td>
+                                  <span class="status-badge <?= $storyStatusClass ?>"><?= $storyStatusLabel ?></span>
+                              </td>
+                              <td class="actions">
+                                  <a href="backoffice.php?page=stories&action=edit&id=<?= $s['id'] ?>" class="action-btn btn-edit"><i class="fas fa-edit"></i></a>
+                                  <form method="POST" action="backoffice.php?page=stories" style="display:inline;" onsubmit="return confirm('Supprimer cette story ?');">
+                                      <input type="hidden" name="action" value="delete">
+                                      <input type="hidden" name="id" value="<?= $s['id'] ?>">
+                                      <button type="submit" class="action-btn btn-delete"><i class="fas fa-trash"></i></button>
+                                  </form>
+                              </td>
+                          </tr>
+                      <?php endforeach; endif; ?>
+                  </tbody>
+              </table>
           </div>
       <?php endif; ?>
 

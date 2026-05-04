@@ -31,3 +31,21 @@
 
 2026-04-28 20:49:16 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Vous | Resp: {"messageId":"<202604281849.92829500453@smtp-relay.mailin.fr>"}
 
+2026-04-28 23:18:10 | BREVO HTTP 401 | Subject: 💬 Nouveau commentaire de Vous | Resp: {"message":"Key not found","code":"unauthorized"}
+
+2026-04-28 23:23:00 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Vous | Resp: {"messageId":"<202604282123.82645574270@smtp-relay.mailin.fr>"}
+
+2026-04-29 10:17:19 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Vous | Resp: {"messageId":"<202604290817.43008028570@smtp-relay.mailin.fr>"}
+
+2026-04-29 10:29:43 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Vous | Resp: {"messageId":"<202604290829.80171454374@smtp-relay.mailin.fr>"}
+
+2026-05-02 14:37:08 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Vous | Resp: {"messageId":"<202605021237.65320580439@smtp-relay.mailin.fr>"}
+
+2026-05-02 14:53:33 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Vous | Resp: {"messageId":"<202605021253.78382439300@smtp-relay.mailin.fr>"}
+
+2026-05-02 14:55:45 | BREVO HTTP 201 | Subject: 💬 Nouveau commentaire de Vous | Resp: {"messageId":"<202605021255.13124276301@smtp-relay.mailin.fr>"}
+
+2026-05-04 21:36:09 | BREVO HTTP 201 | Subject: 📢 Nouvelle publication : Comment blog sur les jeunes entrepenuriat révolutionne la gestion moderne | Resp: {"messageId":"<202605041936.58437305273@smtp-relay.mailin.fr>"}
+
+2026-05-04 21:36:09 | BREVO HTTP 201 | Subject: 📢 Nouvelle publication : Comment blog sur les jeunes entrepenuriat révolutionne la gestion moderne | Resp: {"messageId":"<202605041936.77362890885@smtp-relay.mailin.fr>"}
+

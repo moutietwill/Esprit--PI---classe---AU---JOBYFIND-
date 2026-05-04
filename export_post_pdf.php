@@ -16,20 +16,21 @@ if (!$post) {
 }
 
 class PostPDF extends FPDF {
+    // Header minimaliste
     function Header() {
-        $this->SetFont('Helvetica', 'B', 20); // Utilisation de Helvetica (définie manuellement)
-        $this->SetTextColor(25, 33, 53);
-        $this->Cell(0, 10, 'JOBYFIND - FICHE PUBLICATION', 0, 1, 'C');
-        $this->Ln(5);
+        $this->SetFont('Helvetica', 'B', 14);
+        $this->SetTextColor(66, 103, 178); // Bleu Facebook
+        $this->Cell(0, 10, 'JobyFind', 0, 1, 'L');
         $this->Line(10, $this->GetY(), 200, $this->GetY());
-        $this->Ln(10);
+        $this->Ln(5);
     }
 
+    // Footer minimaliste
     function Footer() {
         $this->SetY(-15);
         $this->SetFont('Helvetica', 'I', 8);
         $this->SetTextColor(156, 163, 175);
-        $this->Cell(0, 10, 'Page ' . $this->PageNo() . '/{nb} - JobyFind.tn - Rapport genere le ' . date('d/m/Y'), 0, 0, 'C');
+        $this->Cell(0, 10, 'Page ' . $this->PageNo() . '/{nb} - JobyFind.tn', 0, 0, 'C');
     }
 }
 
@@ -38,55 +39,105 @@ $pdf->AliasNbPages();
 $pdf->AddPage();
 $pdf->SetAutoPageBreak(true, 20);
 
-// --- TITRE ---
-$pdf->SetFont('Helvetica', 'B', 22);
-$pdf->SetTextColor(17, 24, 39);
+// --- EN-TÊTE DE LA PUBLICATION (Auteur & Date) ---
+$author = $post['instructor'] ? $post['instructor'] : 'Auteur Inconnu';
+$datePost = $post['created_at'] ? date('d/m/Y H:i', strtotime($post['created_at'])) : date('d/m/Y H:i');
+
+$pdf->SetFont('Helvetica', 'B', 12);
+$pdf->SetTextColor(5, 5, 5); // Noir FB
+$pdf->Cell(0, 6, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $author), 0, 1, 'L');
+
+$pdf->SetFont('Helvetica', '', 9);
+$pdf->SetTextColor(101, 103, 107); // Gris FB
+$pdf->Cell(0, 5, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $datePost . ' · JobyFind'), 0, 1, 'L');
+$pdf->Ln(4);
+
+// --- TITRE DE LA PUBLICATION ---
+$pdf->SetFont('Helvetica', 'B', 14);
+$pdf->SetTextColor(5, 5, 5);
 $title = iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $post['title']);
-$pdf->MultiCell(0, 12, strtoupper($title), 0, 'L');
+$pdf->MultiCell(0, 7, $title, 0, 'L');
+$pdf->Ln(2);
+
+// --- CONTENU / STATUT ---
+$pdf->SetFont('Helvetica', '', 11);
+$pdf->SetTextColor(5, 5, 5);
+$content = strip_tags($post['content']);
+$content = iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $content);
+$pdf->MultiCell(0, 6, $content, 0, 'L');
 $pdf->Ln(5);
 
-// --- INFORMATIONS PRINCIPALES (Grille) ---
-$pdf->SetFont('Helvetica', 'B', 12);
-$pdf->SetFillColor(243, 244, 246); // Gris clair
-$pdf->Cell(0, 10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'DÉTAILS DE LA PUBLICATION'), 1, 1, 'L', true);
-
-$pdf->SetFont('Helvetica', '', 11);
-$pdf->Cell(95, 10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', ' Catégorie : ' . ($post['category'] ?: 'N/A')), 1, 0);
-$pdf->Cell(95, 10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', ' Instructeur : ' . ($post['instructor'] ?: 'N/A')), 1, 1);
-
-$pdf->Cell(95, 10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', ' Prix : ' . ($post['price'] > 0 ? $post['price'] . ' TND' : 'Gratuit')), 1, 0);
-$pdf->Cell(95, 10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', ' Statut : ' . strtoupper($post['status'])), 1, 1);
-
-$pdf->Cell(95, 10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', ' Évaluation : ' . ($post['rating'] ?: '0') . '/5'), 1, 0);
-$pdf->Cell(95, 10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', ' Étudiants : ' . ($post['students_count'] ?: '0')), 1, 1);
-$pdf->Ln(10);
-
-// --- IMAGE ---
+// --- IMAGE DE LA PUBLICATION ---
 if ($post['cover_image']) {
     $imagePath = __DIR__ . '/uploads/' . $post['cover_image'];
     if (file_exists($imagePath)) {
-        $pdf->Image($imagePath, 10, $pdf->GetY(), 190);
-        $pdf->Ln(110); // Espace après l'image
+        $imgInfo = @getimagesize($imagePath);
+        if ($imgInfo) {
+            $w = $imgInfo[0];
+            $h = $imgInfo[1];
+            $ratio = $h / $w;
+            $newW = 190;
+            $newH = $newW * $ratio;
+            
+            // Si l'image est trop grande pour le reste de la page, nouvelle page
+            if ($pdf->GetY() + $newH > 270) {
+                $pdf->AddPage();
+            }
+            $pdf->Image($imagePath, 10, $pdf->GetY(), $newW, $newH);
+            $pdf->Ln($newH + 5);
+        } else {
+            // Fallback si getimagesize échoue
+            $pdf->Image($imagePath, 10, $pdf->GetY(), 190);
+            $pdf->Ln(110);
+        }
     }
 }
 
-// --- DESCRIPTION / CONTENU ---
-$pdf->SetFont('Helvetica', 'B', 12);
-$pdf->Cell(0, 10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'CONTENU / DESCRIPTION :'), 0, 1);
-$pdf->SetFont('Helvetica', '', 11);
-$pdf->SetTextColor(55, 65, 81);
+// --- BARRE DES LIKES ET COMMENTAIRES ---
+$likesCount = $blogController->GetLikesCount($id);
+$comments = $blogController->GetCommentsByPost($id);
+$commentsCount = count($comments);
 
-$content = strip_tags($post['content']);
-$content = iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $content);
-$pdf->MultiCell(0, 7, $content, 0, 'J');
+$pdf->Ln(2);
+$pdf->SetFont('Helvetica', '', 10);
+$pdf->SetTextColor(101, 103, 107);
+$statsText = $likesCount . " J'aime   ·   " . $commentsCount . " commentaires";
+$pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $statsText), 0, 1, 'L');
 
-// --- PIED DE PAGE FINAL ---
-$pdf->Ln(20);
-$pdf->SetFont('Helvetica', 'I', 10);
-$pdf->SetTextColor(107, 114, 128);
-$pdf->Cell(0, 10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Fin du document - JobyFind.tn'), 0, 1, 'C');
+// Ligne de séparation
+$pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
+$pdf->Ln(5);
+
+// --- LISTE DES COMMENTAIRES ---
+if ($commentsCount > 0) {
+    foreach ($comments as $c) {
+        // Nom de l'auteur du commentaire
+        $pdf->SetFont('Helvetica', 'B', 10);
+        $pdf->SetTextColor(5, 5, 5);
+        $commentAuthor = iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $c['user_name']);
+        
+        // Date
+        $cDate = date('d/m/Y H:i', strtotime($c['created_at']));
+        
+        $pdf->Cell(0, 5, $commentAuthor . ' - ' . $cDate, 0, 1, 'L');
+        
+        // Texte du commentaire
+        $pdf->SetFont('Helvetica', '', 10);
+        $pdf->SetTextColor(5, 5, 5);
+        $cContent = iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $c['content']);
+        
+        // Affichage avec un léger retrait (indentation)
+        $pdf->SetX(15);
+        $pdf->MultiCell(185, 5, $cContent, 0, 'L');
+        $pdf->Ln(4);
+    }
+} else {
+    $pdf->SetFont('Helvetica', 'I', 10);
+    $pdf->SetTextColor(101, 103, 107);
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Aucun commentaire pour le moment.'), 0, 1, 'C');
+}
 
 // Sortie
-$filename = 'Publication_' . $id . '.pdf';
-$pdf->Output('D', $filename);
+$filename = 'Publication_FB_' . $id . '.pdf';
+$pdf->Output('I', $filename); // 'I' pour l'afficher dans le navigateur (Inline)
 exit;

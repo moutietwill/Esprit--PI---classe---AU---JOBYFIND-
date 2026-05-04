@@ -357,6 +357,167 @@ class BlogController {
         }
     }
 
+    /**
+     * Ajoute automatiquement la colonne de vues si elle n'existe pas encore.
+     */
+    private function EnsureAnalyticsSchema() {
+        $db = Config::GetConnexion();
+        try {
+            $columnCheck = $db->query("SHOW COLUMNS FROM posts LIKE 'views_count'");
+            if (!$columnCheck->fetch()) {
+                $db->exec("ALTER TABLE posts ADD COLUMN views_count INT UNSIGNED NOT NULL DEFAULT 0");
+            }
+        } catch (Exception $e) {
+            // Les statistiques restent optionnelles si la migration echoue.
+        }
+    }
+
+    /**
+     * Incrémente le nombre de vues d'un post.
+     */
+    public function IncrementPostView($postId) {
+        $this->EnsureAnalyticsSchema();
+        $sql = "UPDATE posts SET views_count = views_count + 1 WHERE id = :id";
+        $db = Config::GetConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([':id' => $postId]);
+            return $this->GetPostViewCount($postId);
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    public function GetPostViewCount($postId) {
+        $this->EnsureAnalyticsSchema();
+        $sql = "SELECT COALESCE(views_count, 0) FROM posts WHERE id = :id";
+        $db = Config::GetConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([':id' => $postId]);
+            return (int) $query->fetchColumn();
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    public function GetTotalViews() {
+        $this->EnsureAnalyticsSchema();
+        $sql = "SELECT COALESCE(SUM(views_count), 0) FROM posts";
+        $db = Config::GetConnexion();
+        try {
+            return (int) $db->query($sql)->fetchColumn();
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    public function GetTotalLikes() {
+        $sql = "SELECT COUNT(*) FROM likes";
+        $db = Config::GetConnexion();
+        try {
+            return (int) $db->query($sql)->fetchColumn();
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    public function GetMostViewedPosts($limit = 5) {
+        $this->EnsureAnalyticsSchema();
+        $limit = max(1, (int) $limit);
+        $sql = "SELECT id, title, COALESCE(views_count, 0) AS views_count
+                FROM posts
+                ORDER BY views_count DESC, created_at DESC
+                LIMIT $limit";
+        $db = Config::GetConnexion();
+        try {
+            return $db->query($sql)->fetchAll();
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    public function GetMostLikedPosts($limit = 5) {
+        $limit = max(1, (int) $limit);
+        $sql = "SELECT p.id, p.title, COUNT(l.id) AS likes_count
+                FROM posts p
+                LEFT JOIN likes l ON l.post_id = p.id
+                GROUP BY p.id, p.title, p.created_at
+                ORDER BY likes_count DESC, p.created_at DESC
+                LIMIT $limit";
+        $db = Config::GetConnexion();
+        try {
+            return $db->query($sql)->fetchAll();
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    public function GetMostCommentedPosts($limit = 5) {
+        $limit = max(1, (int) $limit);
+        $sql = "SELECT p.id, p.title, COUNT(c.id) AS comments_count
+                FROM posts p
+                LEFT JOIN comments c ON c.post_id = p.id
+                GROUP BY p.id, p.title, p.created_at
+                ORDER BY comments_count DESC, p.created_at DESC
+                LIMIT $limit";
+        $db = Config::GetConnexion();
+        try {
+            return $db->query($sql)->fetchAll();
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    public function GetCommentsEvolution($days = 7) {
+        $days = max(1, (int) $days);
+        $start = new DateTime("-" . ($days - 1) . " days");
+        $start->setTime(0, 0, 0);
+        $series = [];
+
+        for ($i = 0; $i < $days; $i++) {
+            $day = clone $start;
+            $day->modify("+$i days");
+            $key = $day->format('Y-m-d');
+            $series[$key] = [
+                'day' => $key,
+                'label' => $day->format('d/m'),
+                'comments_count' => 0
+            ];
+        }
+
+        $sql = "SELECT DATE(created_at) AS day, COUNT(*) AS comments_count
+                FROM comments
+                WHERE created_at >= :start_date
+                GROUP BY DATE(created_at)
+                ORDER BY day ASC";
+        $db = Config::GetConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([':start_date' => $start->format('Y-m-d H:i:s')]);
+            foreach ($query->fetchAll() as $row) {
+                if (isset($series[$row['day']])) {
+                    $series[$row['day']]['comments_count'] = (int) $row['comments_count'];
+                }
+            }
+        } catch (Exception $e) {
+            return array_values($series);
+        }
+
+        return array_values($series);
+    }
+
+    public function GetAdvancedStats($days = 7, $limit = 5) {
+        return [
+            'total_views' => $this->GetTotalViews(),
+            'total_likes' => $this->GetTotalLikes(),
+            'top_viewed' => $this->GetMostViewedPosts($limit),
+            'top_liked' => $this->GetMostLikedPosts($limit),
+            'top_commented' => $this->GetMostCommentedPosts($limit),
+            'comments_evolution' => $this->GetCommentsEvolution($days)
+        ];
+    }
+
     public function GetLikesCount($postId) {
         $sql = "SELECT COUNT(*) FROM likes WHERE post_id = :post_id";
         $db = Config::GetConnexion();
@@ -393,6 +554,120 @@ class BlogController {
             $query = $db->prepare($sql);
             $query->execute([':post_id' => $postId, ':user_id' => $userId]);
             return true; // liked
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─────────────── SYSTÈME DE NOTATION (RATING) ───────────────
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * S'assure que la table post_ratings existe (migration automatique).
+     */
+    private function EnsureRatingSchema() {
+        $db = Config::GetConnexion();
+        try {
+            $db->exec("
+                CREATE TABLE IF NOT EXISTS `post_ratings` (
+                    `id`         INT(11) NOT NULL AUTO_INCREMENT,
+                    `post_id`    INT(11) NOT NULL,
+                    `user_id`    INT(11) NOT NULL DEFAULT 1,
+                    `user_ip`    VARCHAR(45),
+                    `rating`     TINYINT(1) NOT NULL,
+                    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`),
+                    UNIQUE KEY `unique_rating` (`post_id`, `user_ip`),
+                    KEY `idx_post_rating` (`post_id`),
+                    CONSTRAINT `ratings_ibfk_1` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+        } catch (Exception $e) {
+            // Silencieux si déjà créée
+        }
+    }
+
+    /**
+     * Ajoute ou met à jour la note d'un utilisateur pour un post.
+     * Recalcule automatiquement la moyenne et le nombre d'avis dans `posts`.
+     * Retourne ['avg' => float, 'count' => int] ou false en cas d'erreur.
+     */
+    public function AddRating($postId, $userId, $rating) {
+        $this->EnsureRatingSchema();
+        $rating = max(1, min(5, (int)$rating));
+        $userIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $db = Config::GetConnexion();
+        try {
+            // INSERT ou UPDATE si l'IP a déjà voté
+            $sql = "INSERT INTO post_ratings (post_id, user_id, user_ip, rating)
+                    VALUES (:post_id, :user_id, :user_ip, :rating)
+                    ON DUPLICATE KEY UPDATE rating = :rating2, updated_at = NOW()";
+            $query = $db->prepare($sql);
+            $query->execute([
+                ':post_id'  => $postId,
+                ':user_id'  => $userId,
+                ':user_ip'  => $userIp,
+                ':rating'   => $rating,
+                ':rating2'  => $rating,
+            ]);
+
+            // Recalculer la moyenne et le nombre total de votes
+            $avgSql = "SELECT AVG(rating) as avg_rating, COUNT(*) as total
+                       FROM post_ratings WHERE post_id = :post_id";
+            $avgQuery = $db->prepare($avgSql);
+            $avgQuery->execute([':post_id' => $postId]);
+            $stats = $avgQuery->fetch();
+
+            $newAvg   = round((float)$stats['avg_rating'], 1);
+            $newCount = (int)$stats['total'];
+
+            // Mettre à jour la table posts
+            $updateSql = "UPDATE posts SET rating = :rating, reviews_count = :count WHERE id = :id";
+            $updateQuery = $db->prepare($updateSql);
+            $updateQuery->execute([
+                ':rating' => $newAvg,
+                ':count'  => $newCount,
+                ':id'     => $postId,
+            ]);
+
+            return ['avg' => $newAvg, 'count' => $newCount];
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Retourne la note donnée par un utilisateur (via IP) pour un post, ou 0 si pas encore voté.
+     */
+    public function GetUserRating($postId, $userId) {
+        $this->EnsureRatingSchema();
+        $userIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $db = Config::GetConnexion();
+        try {
+            $sql = "SELECT rating FROM post_ratings WHERE post_id = :post_id AND user_ip = :user_ip LIMIT 1";
+            $query = $db->prepare($sql);
+            $query->execute([':post_id' => $postId, ':user_ip' => $userIp]);
+            $row = $query->fetch();
+            return $row ? (int)$row['rating'] : 0;
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Retourne la moyenne et le nombre d'avis d'un post.
+     */
+    public function GetPostRating($postId) {
+        $db = Config::GetConnexion();
+        try {
+            $sql = "SELECT COALESCE(rating, 0) as avg_rating, COALESCE(reviews_count, 0) as total
+                    FROM posts WHERE id = :id";
+            $query = $db->prepare($sql);
+            $query->execute([':id' => $postId]);
+            $row = $query->fetch();
+            return ['avg' => (float)($row['avg_rating'] ?? 0), 'count' => (int)($row['total'] ?? 0)];
+        } catch (Exception $e) {
+            return ['avg' => 0, 'count' => 0];
         }
     }
 }

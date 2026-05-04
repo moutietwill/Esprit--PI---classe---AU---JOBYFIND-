@@ -28,6 +28,26 @@ try {
         $db->exec("UPDATE posts p JOIN categories c ON p.category = c.name SET p.category_id = c.id;");
     }
 
+    // Create stories table for the advanced story feature
+    $db->exec("CREATE TABLE IF NOT EXISTS `stories` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `post_id` int(11) DEFAULT NULL,
+        `title` varchar(180) NOT NULL,
+        `content` text,
+        `cta_label` varchar(80) DEFAULT 'Lire le blog',
+        `media_image` varchar(500) DEFAULT NULL,
+        `status` varchar(30) DEFAULT 'published',
+        `views_count` int unsigned NOT NULL DEFAULT 0,
+        `starts_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `expires_at` datetime NOT NULL,
+        `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_story_status_dates` (`status`, `starts_at`, `expires_at`),
+        KEY `idx_story_post` (`post_id`),
+        CONSTRAINT `stories_ibfk_1` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
     echo "Database successfully checked and updated.\n";
 } catch (Exception $e) {
     echo "Error updating database: " . $e->getMessage() . "\n";

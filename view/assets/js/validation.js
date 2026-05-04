@@ -80,6 +80,74 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ----------------------------------------
+    // 1B. STORIES - backoffice.php
+    // ----------------------------------------
+    const storyForm = document.getElementById('storyForm');
+    if (storyForm) {
+        const storyTitleInput = document.getElementById('storyTitleInput');
+        const storyContentInput = document.getElementById('storyContentInput');
+        const storyStartsInput = document.getElementById('storyStartsInput');
+        const storyExpiresInput = document.getElementById('storyExpiresInput');
+        const storyTitleError = document.getElementById('storyTitleError');
+        const storyContentError = document.getElementById('storyContentError');
+        const storyDateError = document.getElementById('storyDateError');
+
+        storyForm.addEventListener('submit', function (e) {
+            let isValid = true;
+
+            storyTitleError.style.display = 'none';
+            storyContentError.style.display = 'none';
+            storyDateError.style.display = 'none';
+            storyTitleInput.style.borderColor = 'var(--border)';
+            storyContentInput.style.borderColor = 'var(--border)';
+            storyStartsInput.style.borderColor = 'var(--border)';
+            storyExpiresInput.style.borderColor = 'var(--border)';
+
+            if (storyTitleInput.value.trim().length < 3) {
+                storyTitleError.textContent = "Le titre doit faire au moins 3 caractères.";
+                storyTitleError.style.display = 'block';
+                storyTitleInput.style.borderColor = '#ef4444';
+                isValid = false;
+            }
+
+            if (storyContentInput.value.trim().length < 10) {
+                storyContentError.textContent = "Le texte doit contenir au moins 10 caractères.";
+                storyContentError.style.display = 'block';
+                storyContentInput.style.borderColor = '#ef4444';
+                isValid = false;
+            }
+
+            const startsAt = storyStartsInput.value ? new Date(storyStartsInput.value) : null;
+            const expiresAt = storyExpiresInput.value ? new Date(storyExpiresInput.value) : null;
+            if (!startsAt || !expiresAt || Number.isNaN(startsAt.getTime()) || Number.isNaN(expiresAt.getTime())) {
+                storyDateError.textContent = "Veuillez renseigner les dates de début et de fin.";
+                storyDateError.style.display = 'block';
+                storyStartsInput.style.borderColor = '#ef4444';
+                storyExpiresInput.style.borderColor = '#ef4444';
+                isValid = false;
+            } else if (expiresAt <= startsAt) {
+                storyDateError.textContent = "La date de fin doit être après la date de début.";
+                storyDateError.style.display = 'block';
+                storyExpiresInput.style.borderColor = '#ef4444';
+                isValid = false;
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+
+        [storyTitleInput, storyContentInput, storyStartsInput, storyExpiresInput].forEach(input => {
+            input.addEventListener('input', function () {
+                storyTitleError.style.display = 'none';
+                storyContentError.style.display = 'none';
+                storyDateError.style.display = 'none';
+                this.style.borderColor = 'var(--border)';
+            });
+        });
+    }
+
+    // ----------------------------------------
     // 2. CATÉGORIES - categories.php
     // ----------------------------------------
     const categoryForm = document.getElementById('categoryForm');
@@ -632,7 +700,10 @@ function submitComment(event, inputElement, postId) {
     // Only submit on Enter key
     if (event.key !== 'Enter') return;
     event.preventDefault();
+    sendComment(inputElement, postId);
+}
 
+function sendComment(inputElement, postId) {
     const errDiv = document.getElementById(`commentError-${postId}`);
     const content = inputElement.value.trim();
 
@@ -746,11 +817,645 @@ function submitComment(event, inputElement, postId) {
         });
 }
 
+function runCommentCommand(btn, postId, commandName) {
+    const inputWrapper = btn.closest('.comment-input-wrapper');
+    const inputElement = inputWrapper ? inputWrapper.querySelector('.comment-input') : null;
+
+    if (!inputElement) return;
+
+    applyCommentCommand(commandName, inputElement, postId);
+}
+
+function applyCommentCommand(commandName, inputElement, postId, voiceText = '') {
+    if (commandName === 'send') {
+        updateVoiceStatus(postId, 'Commande: envoyer.');
+        sendComment(inputElement, postId);
+        return;
+    }
+
+    if (commandName === 'clear') {
+        inputElement.value = '';
+        updateVoiceStatus(postId, 'Commande: effacer.');
+        const errDiv = document.getElementById(`commentError-${postId}`);
+        if (errDiv) {
+            errDiv.textContent = '';
+            errDiv.style.display = 'none';
+        }
+        inputElement.focus();
+        return;
+    }
+
+    if (commandName === 'correct') {
+        inputElement.value = correctVoiceCommentText(voiceText || inputElement.value).slice(0, 500);
+        updateVoiceStatus(postId, 'Commande: corriger.');
+        inputElement.focus();
+    }
+}
+
+// Frontoffice: Voice comments with the browser Web Speech API.
+let activeVoiceRecognition = null;
+let activeVoiceButton = null;
+
+function getSpeechRecognitionConstructor() {
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function toggleVoiceComment(btn, postId) {
+    const Recognition = getSpeechRecognitionConstructor();
+    const inputWrapper = btn.closest('.comment-input-wrapper');
+    const inputElement = inputWrapper ? inputWrapper.querySelector('.comment-input') : null;
+
+    if (!inputElement) return;
+
+    if (!Recognition) {
+        updateVoiceStatus(postId, "La reconnaissance vocale n'est pas supportée par ce navigateur.", true);
+        return;
+    }
+
+    if (activeVoiceRecognition && activeVoiceButton === btn) {
+        activeVoiceRecognition.stop();
+        return;
+    }
+
+    stopActiveVoiceComment();
+
+    const recognition = new Recognition();
+    const initialText = inputElement.value.trim();
+    let finalTranscript = '';
+    let shouldSubmitAfterDictation = false;
+    let hadError = false;
+
+    recognition.lang = 'fr-FR';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    activeVoiceRecognition = recognition;
+    activeVoiceButton = btn;
+
+    recognition.onstart = () => {
+        btn.classList.add('listening');
+        btn.setAttribute('aria-pressed', 'true');
+        const icon = btn.querySelector('i');
+        if (icon) {
+            icon.classList.remove('fa-microphone');
+            icon.classList.add('fa-stop');
+        }
+        updateVoiceStatus(postId, 'Ecoute en cours...');
+    };
+
+    recognition.onresult = (event) => {
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript.trim();
+            if (event.results[i].isFinal) {
+                finalTranscript += ' ' + transcript;
+            } else {
+                interimTranscript += ' ' + transcript;
+            }
+        }
+
+        const finalText = normalizeVoiceText(finalTranscript);
+        const interimText = normalizeVoiceText(interimTranscript);
+        const spokenText = normalizeVoiceText(`${finalText} ${interimText}`);
+        const command = parseVoiceCommand(spokenText);
+
+        if (command.clear) {
+            applyCommentCommand('clear', inputElement, postId);
+            finalTranscript = '';
+            shouldSubmitAfterDictation = false;
+            return;
+        }
+
+        if (command.correct) {
+            const textToCorrect = command.text ? mergeVoiceText(initialText, command.text) : initialText;
+            applyCommentCommand('correct', inputElement, postId, textToCorrect);
+            finalTranscript = '';
+            shouldSubmitAfterDictation = false;
+            return;
+        }
+
+        shouldSubmitAfterDictation = command.submit;
+
+        let previewText = command.text;
+        if (interimText && !command.submit) {
+            previewText = normalizeVoiceText(`${previewText} ${interimText}`);
+        }
+        if (!previewText) {
+            previewText = interimText;
+        }
+
+        inputElement.value = mergeVoiceText(initialText, previewText).slice(0, 500);
+
+        if (inputElement.value.length >= 500) {
+            updateVoiceStatus(postId, 'Limite de 500 caracteres atteinte.', true);
+        } else if (command.submit) {
+            updateVoiceStatus(postId, 'Dictée terminee, envoi du commentaire...');
+        } else {
+            updateVoiceStatus(postId, 'Dictée en cours...');
+        }
+    };
+
+    recognition.onerror = (event) => {
+        hadError = true;
+        const messages = {
+            'not-allowed': 'Autorisez le micro pour dicter un commentaire.',
+            'service-not-allowed': 'Le service de reconnaissance vocale est bloque.',
+            'no-speech': 'Aucune voix detectee. Reessayez.',
+            'audio-capture': 'Micro introuvable ou indisponible.',
+            'network': 'Service vocal indisponible pour le moment.'
+        };
+        updateVoiceStatus(postId, messages[event.error] || 'Erreur pendant la reconnaissance vocale.', true);
+    };
+
+    recognition.onend = () => {
+        resetVoiceButton(btn);
+
+        if (activeVoiceRecognition === recognition) {
+            activeVoiceRecognition = null;
+            activeVoiceButton = null;
+        }
+
+        if (shouldSubmitAfterDictation && inputElement.value.trim().length > 0) {
+            sendComment(inputElement, postId);
+            return;
+        }
+
+        if (!hadError) {
+            updateVoiceStatus(postId, inputElement.value.trim() ? 'Dictée ajoutee au commentaire.' : '');
+        }
+    };
+
+    try {
+        recognition.start();
+    } catch (error) {
+        resetVoiceButton(btn);
+        activeVoiceRecognition = null;
+        activeVoiceButton = null;
+        updateVoiceStatus(postId, 'Impossible de demarrer la reconnaissance vocale.', true);
+    }
+}
+
+function stopActiveVoiceComment() {
+    if (activeVoiceRecognition) {
+        activeVoiceRecognition.stop();
+    }
+
+    if (activeVoiceButton) {
+        resetVoiceButton(activeVoiceButton);
+    }
+
+    activeVoiceRecognition = null;
+    activeVoiceButton = null;
+}
+
+function resetVoiceButton(btn) {
+    btn.classList.remove('listening');
+    btn.setAttribute('aria-pressed', 'false');
+    const icon = btn.querySelector('i');
+    if (icon) {
+        icon.classList.remove('fa-stop');
+        icon.classList.add('fa-microphone');
+    }
+}
+
+function updateVoiceStatus(postId, message, isError = false) {
+    const status = document.getElementById(`voiceStatus-${postId}`);
+    if (!status) return;
+
+    status.textContent = message;
+    status.classList.toggle('error', isError);
+}
+
+function mergeVoiceText(initialText, voiceText) {
+    const cleanVoiceText = (voiceText || '').trim();
+    if (!cleanVoiceText) return initialText;
+    if (!initialText) return cleanVoiceText;
+    return `${initialText} ${cleanVoiceText}`;
+}
+
+function normalizeVoiceText(text) {
+    return (text || '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function parseVoiceCommand(text) {
+    const cleanText = normalizeVoiceText(text);
+    const clearPattern = /^(effacer|efface|supprimer|supprime|vider|vide)( le commentaire| mon commentaire)?$/i;
+    const correctPattern = /\b(corriger|corrige|corrigez)( le commentaire| mon commentaire)?$/i;
+    const submitPattern = /\b(envoyer|envoie|publier|publie|poster|poste|valider|valide)( le commentaire| mon commentaire)?$/i;
+
+    if (clearPattern.test(cleanText)) {
+        return { text: '', clear: true, correct: false, submit: false };
+    }
+
+    const shouldCorrect = correctPattern.test(cleanText);
+    const shouldSubmit = submitPattern.test(cleanText);
+    const cleanedText = normalizeVoiceText(
+        cleanText
+            .replace(correctPattern, '')
+            .replace(submitPattern, '')
+    );
+
+    return {
+        text: cleanedText,
+        clear: false,
+        correct: shouldCorrect,
+        submit: shouldSubmit
+    };
+}
+
+function correctVoiceCommentText(text) {
+    let corrected = normalizeVoiceText(text)
+        .replace(/\bvirgule\b/gi, ',')
+        .replace(/\bpoint d'interrogation\b/gi, '?')
+        .replace(/\bpoint d interrogation\b/gi, '?')
+        .replace(/\bpoint d'exclamation\b/gi, '!')
+        .replace(/\bpoint d exclamation\b/gi, '!')
+        .replace(/\bpoint\b/gi, '.')
+        .replace(/\s+([,.!?])/g, '$1')
+        .replace(/([,.!?])(?=\S)/g, '$1 ')
+        .replace(/\bi l\b/gi, 'il')
+        .replace(/\bj aime\b/gi, "j'aime")
+        .replace(/\bc est\b/gi, "c'est")
+        .replace(/\bd accord\b/gi, "d'accord")
+        .trim();
+
+    if (!corrected) return '';
+
+    corrected = corrected.charAt(0).toUpperCase() + corrected.slice(1);
+
+    if (!/[.!?]$/.test(corrected)) {
+        corrected += '.';
+    }
+
+    return corrected;
+}
+
+document.addEventListener('DOMContentLoaded', initPostViewTracking);
+
+function initPostViewTracking() {
+    const cards = document.querySelectorAll('[data-view-post-id]');
+    if (!cards.length) return;
+
+    const viewedPosts = getViewedPostsFromSession();
+
+    const trackCard = (card) => {
+        const postId = card.getAttribute('data-view-post-id');
+        if (!postId || viewedPosts.includes(postId)) return;
+
+        viewedPosts.push(postId);
+        saveViewedPostsToSession(viewedPosts);
+
+        fetch('../ajax_track_view.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ post_id: postId })
+        }).catch(error => {
+            console.error('Erreur tracking vue:', error);
+        });
+    };
+
+    if (!('IntersectionObserver' in window)) {
+        cards.forEach(trackCard);
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
+                trackCard(entry.target);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: [0.55] });
+
+    cards.forEach(card => observer.observe(card));
+}
+
+function getViewedPostsFromSession() {
+    try {
+        return JSON.parse(sessionStorage.getItem('viewed_posts') || '[]');
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveViewedPostsToSession(viewedPosts) {
+    try {
+        sessionStorage.setItem('viewed_posts', JSON.stringify(viewedPosts));
+    } catch (error) {
+        // Le tracking reste fonctionnel meme si sessionStorage est bloque.
+    }
+}
+
 function escapeHtml(unsafe) {
-    return unsafe
+    return String(unsafe || '')
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+let currentStoryIndex = 0;
+let storyAutoTimer = null;
+
+function getStoryItems() {
+    return Array.isArray(window.storyItems) ? window.storyItems : [];
+}
+
+function openStory(index) {
+    const stories = getStoryItems();
+    if (!stories.length || !stories[index]) return;
+
+    currentStoryIndex = index;
+    const modal = document.getElementById('storyModal');
+    if (!modal) return;
+
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    renderCurrentStory();
+}
+
+function closeStory() {
+    const modal = document.getElementById('storyModal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    document.body.style.overflow = '';
+    clearTimeout(storyAutoTimer);
+    storyAutoTimer = null;
+}
+
+function nextStory() {
+    const stories = getStoryItems();
+    if (!stories.length) return;
+
+    if (currentStoryIndex < stories.length - 1) {
+        currentStoryIndex++;
+        renderCurrentStory();
+    } else {
+        closeStory();
+    }
+}
+
+function prevStory() {
+    const stories = getStoryItems();
+    if (!stories.length) return;
+
+    currentStoryIndex = currentStoryIndex > 0 ? currentStoryIndex - 1 : stories.length - 1;
+    renderCurrentStory();
+}
+
+function renderCurrentStory() {
+    const stories = getStoryItems();
+    const story = stories[currentStoryIndex];
+    if (!story) return;
+
+    const media = document.getElementById('storyMedia');
+    const title = document.getElementById('storyModalTitle');
+    const content = document.getElementById('storyModalContent');
+    const cta = document.getElementById('storyCtaButton');
+    const ctaText = document.getElementById('storyCtaText');
+    const postLabel = document.getElementById('storyPostLabel');
+
+    if (media) {
+        media.innerHTML = story.image ? `<img src="${escapeHtml(story.image)}" alt="${escapeHtml(story.title)}">` : '';
+    }
+    if (title) title.textContent = story.title || '';
+    if (content) content.textContent = story.content || '';
+    if (ctaText) ctaText.textContent = story.cta_label || 'Voir le blog';
+    if (postLabel) postLabel.textContent = story.post_title ? story.post_title : '';
+    if (cta) cta.disabled = !story.post_id;
+
+    trackStoryView(story.id);
+    restartStoryProgress();
+}
+
+function restartStoryProgress() {
+    clearTimeout(storyAutoTimer);
+
+    const progress = document.getElementById('storyProgressBar');
+    if (progress) {
+        progress.classList.remove('running');
+        progress.style.width = '0';
+        void progress.offsetWidth;
+        progress.style.width = '';
+        progress.classList.add('running');
+    }
+
+    storyAutoTimer = setTimeout(nextStory, 7000);
+}
+
+function openStoryPost() {
+    const stories = getStoryItems();
+    const story = stories[currentStoryIndex];
+    if (!story || !story.post_id) return;
+
+    closeStory();
+    setTimeout(() => {
+        const card = document.querySelector(`[data-view-post-id="${story.post_id}"]`);
+        if (!card) return;
+
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('story-highlight');
+        setTimeout(() => card.classList.remove('story-highlight'), 1800);
+    }, 120);
+}
+
+function trackStoryView(storyId) {
+    if (!storyId) return;
+
+    const viewedStories = getViewedStoriesFromSession();
+    const id = String(storyId);
+    if (viewedStories.includes(id)) return;
+
+    viewedStories.push(id);
+    saveViewedStoriesToSession(viewedStories);
+
+    fetch('../ajax_track_story_view.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ story_id: storyId })
+    }).catch(error => {
+        console.error('Erreur tracking story:', error);
+    });
+}
+
+function getViewedStoriesFromSession() {
+    try {
+        return JSON.parse(sessionStorage.getItem('viewed_stories') || '[]');
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveViewedStoriesToSession(viewedStories) {
+    try {
+        sessionStorage.setItem('viewed_stories', JSON.stringify(viewedStories));
+    } catch (error) {
+        // Story tracking stays optional if sessionStorage is blocked.
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const storyModal = document.getElementById('storyModal');
+    if (storyModal) {
+        storyModal.addEventListener('click', function (event) {
+            if (event.target === storyModal) {
+                closeStory();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', function (event) {
+        const modalIsOpen = storyModal && storyModal.classList.contains('show');
+        if (!modalIsOpen) return;
+
+        if (event.key === 'Escape') closeStory();
+        if (event.key === 'ArrowRight') nextStory();
+        if (event.key === 'ArrowLeft') prevStory();
+    });
+});
+
+// Frontoffice: Load More Posts (Infinite Scroll / Pagination)
+function loadMorePosts() {
+    const btn = document.getElementById('loadMoreBtn');
+    if (!btn) return;
+    
+    const currentPage = parseInt(btn.getAttribute('data-page'));
+    const totalPages = parseInt(btn.getAttribute('data-total'));
+    const search = btn.getAttribute('data-search') || '';
+    
+    if (currentPage >= totalPages) return;
+    
+    const nextPage = currentPage + 1;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
+    
+    fetch(`../ajax_load_posts.php?page=${nextPage}&search=${encodeURIComponent(search)}`)
+        .then(response => response.text())
+        .then(html => {
+            if (html.trim() !== '') {
+                const grid = document.querySelector('.formations-grid');
+                if (grid) {
+                    grid.insertAdjacentHTML('beforeend', html);
+                }
+                
+                btn.setAttribute('data-page', nextPage);
+                if (nextPage >= totalPages) {
+                    btn.parentElement.style.display = 'none'; // Hide if no more pages
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Charger plus de formations';
+                }
+                
+                // Re-init tracking for new elements
+                if (typeof initPostViewTracking === 'function') {
+                    initPostViewTracking();
+                }
+            } else {
+                btn.parentElement.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading posts:', error);
+            btn.disabled = false;
+            btn.innerHTML = 'Erreur. Réessayer';
+        });
+}
+
+// ============================================
+// STAR RATING (Frontoffice)
+// ============================================
+
+/**
+ * Highlights stars up to index on mouseenter.
+ */
+function hoverStars(postId, value) {
+    const container = document.getElementById(`stars-${postId}`);
+    if (!container) return;
+    container.querySelectorAll('.star-btn').forEach(btn => {
+        const v = parseInt(btn.getAttribute('data-value'));
+        btn.classList.toggle('hovered', v <= value);
+        btn.querySelector('i').className = v <= value ? 'fas fa-star' : 'far fa-star';
+    });
+}
+
+/**
+ * Restores stars to saved userRating on mouseleave.
+ */
+function resetStarHover(postId, savedRating) {
+    const container = document.getElementById(`stars-${postId}`);
+    if (!container) return;
+    container.querySelectorAll('.star-btn').forEach(btn => {
+        const v = parseInt(btn.getAttribute('data-value'));
+        btn.classList.remove('hovered');
+        const active = v <= savedRating;
+        btn.classList.toggle('selected', active);
+        btn.querySelector('i').className = active ? 'fas fa-star' : 'far fa-star';
+    });
+}
+
+/**
+ * Sends the rating to the server via AJAX and updates the card UI.
+ */
+function ratePost(postId, rating) {
+    const container  = document.getElementById(`stars-${postId}`);
+    const summary    = document.getElementById(`rating-summary-${postId}`);
+    const feedback   = document.getElementById(`star-feedback-${postId}`);
+    if (!container) return;
+
+    // Optimistic UI: highlight immediately
+    container.querySelectorAll('.star-btn').forEach(btn => {
+        const v = parseInt(btn.getAttribute('data-value'));
+        btn.classList.remove('hovered');
+        const active = v <= rating;
+        btn.classList.toggle('selected', active);
+        btn.querySelector('i').className = active ? 'fas fa-star' : 'far fa-star';
+        // Update mouseleave to use new saved rating
+        btn.setAttribute('onmouseleave', `resetStarHover(${postId}, ${rating})`);
+    });
+
+    const formData = new FormData();
+    formData.append('post_id', postId);
+    formData.append('rating',  rating);
+
+    fetch('../ajax_rate_post.php', {
+        method: 'POST',
+        body:   formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && summary) {
+            // Update average and count
+            const avgEl    = summary.querySelector('.star-avg-value');
+            const countEl  = summary.querySelector('.star-count-badge');
+            if (avgEl)   avgEl.textContent   = data.avg > 0 ? parseFloat(data.avg).toFixed(1) : '—';
+            if (countEl) countEl.textContent = data.count + ' avis';
+
+            // Show brief feedback toast
+            if (feedback) {
+                feedback.style.display = 'inline-block';
+                feedback.style.animation = 'none';
+                void feedback.offsetWidth; // reflow
+                feedback.style.animation = 'fadeInOut 2.5s ease forwards';
+                setTimeout(() => { feedback.style.display = 'none'; }, 2600);
+            }
+        }
+    })
+    .catch(err => {
+        console.error('Erreur ratePost:', err);
+    });
+}
+

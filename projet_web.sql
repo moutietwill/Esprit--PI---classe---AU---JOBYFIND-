@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS `posts` (
   `rating` float DEFAULT '0',
   `reviews_count` int(11) DEFAULT '0',
   `students_count` int(11) DEFAULT '0',
+  `views_count` int(11) DEFAULT '0',
   `duration_hours` float,
   `cover_image` varchar(500),
   `status` varchar(50) DEFAULT 'published',
@@ -62,6 +63,28 @@ CREATE TABLE IF NOT EXISTS `likes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ===================================================================
+-- Table: stories (metier avance)
+-- ===================================================================
+CREATE TABLE IF NOT EXISTS `stories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `post_id` int(11) DEFAULT NULL,
+  `title` varchar(180) NOT NULL,
+  `content` text,
+  `cta_label` varchar(80) DEFAULT 'Lire le blog',
+  `media_image` varchar(500) DEFAULT NULL,
+  `status` varchar(30) DEFAULT 'published',
+  `views_count` int unsigned NOT NULL DEFAULT 0,
+  `starts_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` datetime NOT NULL,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_story_status_dates` (`status`, `starts_at`, `expires_at`),
+  KEY `idx_story_post` (`post_id`),
+  CONSTRAINT `stories_ibfk_1` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ===================================================================
 -- Table: users (utilisateurs)
 -- ===================================================================
 CREATE TABLE IF NOT EXISTS `users` (
@@ -86,3 +109,7 @@ INSERT INTO `posts` (`title`, `excerpt`, `content`, `category`, `instructor`, `p
 ('Marketing Digital 2024', 'Stratégies modernes de marketing digital pour maximiser votre présence en ligne.', 'Les dernières stratégies et outils de marketing digital pour 2024. SEO, publicités, réseaux sociaux et bien plus.', 'Marketing', 'Sarah Connor', '19.99', '4.6', '150', '4500', '6', 'published'),
 ('Gestion de Projet Agile', 'Maîtrisez les méthodologies Agile et Scrum pour une gestion de projet efficace.', 'Certification Scrum Master - Apprenez à gérer des projets avec Agile. Sprints, retrospectives et planification.', 'Gestion', 'Tom Wilson', '34.99', '4.8', '100', '2800', '8', 'published'),
 ('Python pour les Débutants', 'Apprenez Python pas à pas, du zéro à la maîtrise.', 'Langage puissant et facile à apprendre. Variables, boucles, fonctions et programmation orientée objet.', 'Développement', 'Alice Brown', '21.99', '4.6', '180', '4200', '9', 'published');
+
+INSERT INTO `stories` (`post_id`, `title`, `content`, `cta_label`, `status`, `starts_at`, `expires_at`) VALUES
+(1, 'React en pratique', 'Une selection rapide pour demarrer avec les hooks et les composants.', 'Voir le blog', 'published', NOW(), DATE_ADD(NOW(), INTERVAL 2 DAY)),
+(3, 'Focus Design', 'Les bases UX/UI a revoir avant de lancer votre prochain projet.', 'Explorer', 'published', NOW(), DATE_ADD(NOW(), INTERVAL 1 DAY));
