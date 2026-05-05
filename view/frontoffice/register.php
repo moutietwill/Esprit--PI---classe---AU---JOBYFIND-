@@ -4,7 +4,6 @@ require_once(__DIR__ . '/../../Controller/UtilisateurController.php');
 require_once(__DIR__ . '/../../Model/Utilisateur.php');
 
 $error = "";
-$success = "";
 
 if (
     isset($_POST["first_name"]) &&
@@ -27,12 +26,28 @@ if (
             'phone' => $_POST['phone'] ?? null,
             'city' => $_POST['city'] ?? null,
             'email' => $_POST['email'],
-            'password' => password_hash($_POST['password'], PASSWORD_DEFAULT),
+            'password' => $_POST['password'],
             'role' => $_POST['role'] ?? 'Entrepreneur',
             'status' => 'Actif'
         ]);
-        $userController->addUser($user);
-        $success = "Compte créé avec succès !";
+        $userId = $userController->addUser($user);
+        
+        if ($userId) {
+            // Fetch the user from DB to ensure session consistency (like signin.php)
+            $dbUser = $userController->getUserById($userId);
+            if ($dbUser) {
+                $_SESSION['user_id'] = $dbUser['id'];
+                $_SESSION['role'] = $dbUser['role'];
+                
+                // Ensure session is saved before redirect
+                session_write_close();
+                
+                header('Location: profile.php');
+                exit();
+            }
+        } else {
+            $error = "Une erreur est survenue lors de la création du compte.";
+        }
     } else {
         $error = "Veuillez remplir tous les champs obligatoires.";
     }
@@ -49,11 +64,11 @@ if (
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="assets/css/styleregister.css">
   <style>
-    .error-box { background:
+    .error-box { background:#fee2e2; color:#b91c1c; padding:12px; border-radius:8px; margin-bottom:16px; font-size:14px; display:flex; align-items:center; }
     .error-box i { margin-right:6px; }
     .strength-bar { display:flex; gap:6px; margin-top:8px; }
-    .strength-segment { height:4px; flex:1; background:
-    .strength-label { font-size:11px; margin-top:6px; color:
+    .strength-segment { height:4px; flex:1; background:#e2e8f0; border-radius:2px; }
+    .strength-label { font-size:11px; margin-top:6px; color:#64748b; }
   </style>
   <script src="assets/js/register.js"></script>
 </head>
@@ -86,11 +101,6 @@ if (
       <h1>Rejoignez Jobyfind</h1>
 
       <!-- Messages -->
-      <?php if($success): ?>
-        <div style="background:#ecfdf5; color:#059669; padding:12px; border-radius:8px; margin-bottom:16px; font-size:14px; border:1px solid #10b981;">
-          <i class="fa fa-check-circle"></i> <?php echo $success; ?>
-        </div>
-      <?php endif; ?>
 
       <?php if($error): ?>
         <div class="error-box">
@@ -104,7 +114,7 @@ if (
         </div>
       <?php endif; ?>
 
-      <form action="#" method="POST" id="register-form">
+      <form action="register.php" method="POST" id="register-form">
 
           <!-- Role Tabs -->
           <div class="role-tabs">
@@ -136,7 +146,7 @@ if (
 
           <div class="form-row">
             <div class="form-group">
-              <label>Nom d'utilisateur *</label>
+              <label>Nom user </label>
               <div class="input-icon-wrap">
                 <i class="fa fa-at"></i>
                 <input type="text" name="username" id="username" placeholder="mohamedbenali" value="">

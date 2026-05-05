@@ -4,15 +4,53 @@ require_once(__DIR__ . '/../Model/Utilisateur.php');
 
 class UtilisateurController
 {
-    public function listUsers()
+    public function listUsers($sort = null, $order = 'ASC')
     {
         $sql = "SELECT * FROM utilisateurs";
+        
+        $allowedSortFields = ['status', 'role', 'created_at', 'first_name', 'last_name', 'email'];
+        if ($sort && in_array($sort, $allowedSortFields)) {
+            $sql .= " ORDER BY $sort $order";
+        }
+        
         $db = config::getConnexion();
         try {
             $liste = $db->query($sql);
             return $liste->fetchAll();
         } catch (Exception $e) {
             die('Erreur: ' . $e->getMessage());
+        }
+    }
+
+    public function getMonthlyActiveUsersStats()
+    {
+        $sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(id) as count 
+                FROM utilisateurs 
+                WHERE status = 'Actif' 
+                GROUP BY DATE_FORMAT(created_at, '%Y-%m') 
+                ORDER BY month ASC";
+        $db = config::getConnexion();
+        try {
+            $query = $db->query($sql);
+            return $query->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    public function getMonthlyEntrepreneurStats()
+    {
+        $sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(id) as count 
+                FROM utilisateurs 
+                WHERE role = 'Entrepreneur' AND status = 'Actif'
+                GROUP BY DATE_FORMAT(created_at, '%Y-%m') 
+                ORDER BY month ASC";
+        $db = config::getConnexion();
+        try {
+            $query = $db->query($sql);
+            return $query->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            return [];
         }
     }
 
@@ -86,6 +124,7 @@ class UtilisateurController
                 'role' => $utilisateur->getRole(),
                 'status' => $utilisateur->getStatus()
             ]);
+            return $db->lastInsertId();
         } catch (Exception $e) {
             die('Erreur: ' . $e->getMessage());
         }
@@ -151,11 +190,11 @@ class UtilisateurController
 
     public function getUserById($id)
     {
-        $sql = "SELECT * from utilisateurs where id = $id";
+        $sql = "SELECT * from utilisateurs where id = :id";
         $db = config::getConnexion();
         try {
             $query = $db->prepare($sql);
-            $query->execute();
+            $query->execute(['id' => $id]);
             $user = $query->fetch();
             return $user;
         } catch (Exception $e) {

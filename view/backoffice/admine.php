@@ -72,7 +72,12 @@ if (isset($_POST['first_name']) && isset($_POST['last_name']) && isset($_POST['e
     }
 }
 
-$users = $userController->listUsers();
+$sort = $_GET['sort'] ?? null;
+$order = $_GET['order'] ?? 'ASC';
+$users = $userController->listUsers($sort, $order);
+
+$activeStats = $userController->getMonthlyActiveUsersStats();
+$entrepreneurStats = $userController->getMonthlyEntrepreneurStats();
 
 if (isset($_GET['success'])) {
     $message = $_GET['success'];
@@ -88,14 +93,26 @@ if (isset($_GET['success'])) {
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="assets/css/styleadmin.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .alert { padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; display: flex; align-items: center; gap: 10px; }
     .alert-success { background: #ecfdf5; color: #059669; border: 1px solid #10b981; }
     .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #f87171; }
     .profile-advanced-info { background: #f8fafc; border-radius: 8px; padding: 15px; margin-top: 15px; border-left: 4px solid #2563eb; }
     .profile-advanced-info p { margin-bottom: 8px; }
+    
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+    
+    .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .chart-card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); height: 450px; display: flex; flex-direction: column; }
+    .chart-title { font-weight: 600; margin-bottom: 20px; color: #1e293b; display: flex; align-items: center; gap: 10px; font-size: 16px; }
+    .chart-wrapper { flex: 1; position: relative; min-height: 0; }
+    
+    .sort-link { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 5px; }
+    .sort-link:hover { color: #2563eb; }
   </style>
-  <script src="assets/js/admin.js"></script>
+  <script src="assets/js/admin.js?v=1.1"></script>
 </head>
 <body>
 
@@ -108,12 +125,12 @@ if (isset($_GET['success'])) {
     </div>
     <div class="sidebar-section">
       <p class="sidebar-section-label">Tableau de bord</p>
-      <a class="sidebar-link active" href="#">
+      <a class="sidebar-link active" href="#" onclick="showSection('users-section', this)">
         <i class="fa-solid fa-users"></i>
         <span>Utilisateurs</span>
         <span class="badge"><?php echo count($users); ?></span>
       </a>
-      <a class="sidebar-link" href="#">
+      <a class="sidebar-link" href="#" onclick="showSection('stats-section', this)">
         <i class="fa-solid fa-chart-line"></i>
         <span>Statistiques</span>
       </a>
@@ -194,113 +211,187 @@ if (isset($_GET['success'])) {
       </script>
       <?php endif; ?>
 
-
       <?php
         $totalUsers = count($users);
         $actifs = count(array_filter($users, fn($u) => $u['status'] === 'Actif'));
         $attente = count(array_filter($users, fn($u) => $u['status'] === 'En attente'));
         $suspendus = count(array_filter($users, fn($u) => $u['status'] === 'Suspendu'));
       ?>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon blue"><i class="fa fa-users"></i></div>
-          <div>
-            <p class="stat-label">Total Utilisateurs</p>
-            <p class="stat-value"><?php echo $totalUsers; ?></p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon green"><i class="fa fa-check-circle"></i></div>
-          <div>
-            <p class="stat-label">Comptes Actifs</p>
-            <p class="stat-value"><?php echo $actifs; ?></p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon amber"><i class="fa fa-clock"></i></div>
-          <div>
-            <p class="stat-label">En attente</p>
-            <p class="stat-value"><?php echo $attente; ?></p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon red"><i class="fa fa-ban"></i></div>
-          <div>
-            <p class="stat-label">Suspendus</p>
-            <p class="stat-value"><?php echo $suspendus; ?></p>
-          </div>
-        </div>
-      </div>
 
 
-      <div class="table-card">
-        <div class="table-header">
-          <div>
-            <p class="table-title">Gestion des utilisateurs</p>
-            <p class="table-subtitle"><?php echo count($users); ?> utilisateurs enregistrés</p>
-          </div>
-          <div class="table-controls">
-            <button class="btn-primary" onclick="openAddModalPHP()">
-              <i class="fa fa-plus"></i> Ajouter
-            </button>
-          </div>
-        </div>
 
-        <table id="user-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Utilisateur</th>
-              <th>Email</th>
-              <th>Rôle</th>
-              <th>Statut</th>
-              <th>Membre depuis</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="table-body">
-            <?php if (empty($users)): ?>
-            <tr>
-              <td colspan="7" style="text-align:center;">Aucun utilisateur trouvé.</td>
-            </tr>
-            <?php else: ?>
-              <?php foreach ($users as $u): ?>
+
+      <div id="users-section" class="view-section active">
+        <div class="table-card">
+          <div class="table-header">
+            <div>
+              <p class="table-title">Gestion des utilisateurs</p>
+              <p class="table-subtitle"><?php echo count($users); ?> utilisateurs enregistrés</p>
+            </div>
+            <div class="table-controls">
+              <button class="btn-primary" onclick="openAddModalPHP()">
+                <i class="fa fa-plus"></i> Ajouter
+              </button>
+            </div>
+          </div>
+
+          <table id="user-table">
+            <thead>
               <tr>
-                <td>
-                <td>
-                  <div class="user-cell">
-                    <div class="user-avatar" style="background:#dbeafe; color:#2563eb;"><?php echo strtoupper(substr($u['first_name'],0,1).substr($u['last_name'],0,1)); ?></div>
-                    <div>
-                      <p class="user-name"><?php echo htmlspecialchars($u['first_name'] . ' ' . $u['last_name']); ?></p>
-                      <p class="user-email">@<?php echo htmlspecialchars($u['username']); ?></p>
-                    </div>
-                  </div>
-                </td>
-                <td><?php echo htmlspecialchars($u['email']); ?></td>
-                <td><span class="badge badge-blue"><?php echo htmlspecialchars($u['role']); ?></span></td>
-                <td>
-                  <?php 
-                    $statusClass = 'badge-gray';
-                    if ($u['status'] === 'Actif') $statusClass = 'badge-green';
-                    elseif ($u['status'] === 'Suspendu') $statusClass = 'badge-red';
-                    elseif ($u['status'] === 'En attente') $statusClass = 'badge-amber';
-                  ?>
-                  <span class="badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($u['status']); ?></span>
-                </td>
-                <td><span style="font-size:12px;color:var(--muted);"><?php echo date('d/m/Y', strtotime($u['created_at'])); ?></span></td>
-                <td>
-                  <div class="action-btns">
-                    <button class="action-btn view" onclick='viewFullProfilePHP(<?php echo $u['id']; ?>)' title="Voir Profil Complet"><i class="fa fa-eye"></i></button>
-                    <button class="action-btn edit" onclick='editUserPHP(<?php echo json_encode($u); ?>)' title="Modifier"><i class="fa fa-pen"></i></button>
-                    <button class="action-btn del" onclick="confirmDeletePHP(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['first_name'].' '.$u['last_name']); ?>')" title="Supprimer"><i class="fa fa-trash"></i></button>
-                  </div>
-                </td>
+                <th>ID</th>
+                <th>Utilisateur</th>
+                <th>Email</th>
+                <th>
+                  <a href="?sort=role&order=<?php echo ($sort === 'role' && $order === 'ASC') ? 'DESC' : 'ASC'; ?>" class="sort-link">
+                    Rôle <i class="fa fa-sort<?php echo $sort === 'role' ? ($order === 'ASC' ? '-up' : '-down') : ''; ?>"></i>
+                  </a>
+                </th>
+                <th>
+                  <a href="?sort=status&order=<?php echo ($sort === 'status' && $order === 'ASC') ? 'DESC' : 'ASC'; ?>" class="sort-link">
+                    Statut <i class="fa fa-sort<?php echo $sort === 'status' ? ($order === 'ASC' ? '-up' : '-down') : ''; ?>"></i>
+                  </a>
+                </th>
+                <th>Membre depuis</th>
+                <th>Actions</th>
               </tr>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody id="table-body">
+              <?php if (empty($users)): ?>
+              <tr>
+                <td colspan="7" style="text-align:center;">Aucun utilisateur trouvé.</td>
+              </tr>
+              <?php else: ?>
+                <?php foreach ($users as $u): ?>
+                <tr>
+                  <td><?php echo $u['id']; ?></td>
+                  <td>
+                    <div class="user-cell">
+                      <div class="user-avatar" style="background:#dbeafe; color:#2563eb;"><?php echo strtoupper(substr($u['first_name']??'',0,1).substr($u['last_name']??'',0,1)); ?></div>
+                      <div>
+                        <p class="user-name"><?php echo htmlspecialchars(($u['first_name']??'') . ' ' . ($u['last_name']??'')); ?></p>
+                        <p class="user-email">@<?php echo htmlspecialchars($u['username']??''); ?></p>
+                      </div>
+                    </div>
+                  </td>
+                  <td><?php echo htmlspecialchars($u['email']??''); ?></td>
+                  <td><span class="badge badge-blue"><?php echo htmlspecialchars($u['role']??''); ?></span></td>
+                  <td>
+                    <?php 
+                      $statusClass = 'badge-gray';
+                      $status = $u['status'] ?? 'Inconnu';
+                      if ($status === 'Actif') $statusClass = 'badge-green';
+                      elseif ($status === 'Suspendu') $statusClass = 'badge-red';
+                      elseif ($status === 'En attente') $statusClass = 'badge-amber';
+                    ?>
+                    <span class="badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($status); ?></span>
+                  </td>
+                  <td><span style="font-size:12px;color:var(--muted);"><?php echo isset($u['created_at']) ? date('d/m/Y', strtotime($u['created_at'])) : 'N/A'; ?></span></td>
+                  <td>
+                    <div class="action-btns">
+                      <button class="action-btn view" onclick='viewFullProfilePHP(<?php echo $u['id']; ?>)' title="Voir Profil Complet"><i class="fa fa-eye"></i></button>
+                      <button class="action-btn edit" onclick='editUserPHP(<?php echo json_encode($u); ?>)' title="Modifier"><i class="fa fa-pen"></i></button>
+                      <button class="action-btn del" onclick="confirmDeletePHP(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars(($u['first_name']??'').' '.($u['last_name']??'')); ?>')" title="Supprimer"><i class="fa fa-trash"></i></button>
+                    </div>
+                  </td>
+                </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <div id="stats-section" class="view-section">
+        <div class="stats-grid" style="margin-bottom: 30px;">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="fa fa-users"></i></div>
+            <div>
+              <p class="stat-label">Total Utilisateurs</p>
+              <p class="stat-value"><?php echo $totalUsers; ?></p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="fa fa-check-circle"></i></div>
+            <div>
+              <p class="stat-label">Comptes Actifs</p>
+              <p class="stat-value"><?php echo $actifs; ?></p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon amber"><i class="fa fa-clock"></i></div>
+            <div>
+              <p class="stat-label">En attente</p>
+              <p class="stat-value"><?php echo $attente; ?></p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red"><i class="fa fa-ban"></i></div>
+            <div>
+              <p class="stat-label">Suspendus</p>
+              <p class="stat-value"><?php echo $suspendus; ?></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-container">
+          <div class="chart-card">
+            <p class="chart-title"><i class="fa fa-money-bill-trend-up" style="color:#10b981"></i> Revenu estimé (Personnes Actives)</p>
+            <div class="chart-wrapper">
+                <canvas id="revenueChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <p class="chart-title"><i class="fa fa-user-tie" style="color:#2563eb"></i> Entrepreneurs Actifs</p>
+            <div class="chart-wrapper">
+                <canvas id="entrepreneurChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        const activeStatsData = <?php echo json_encode($activeStats); ?>;
+        const entrepreneurStatsData = <?php echo json_encode($entrepreneurStats); ?>;
+        
+        let chartsObj = {
+            revenue: null,
+            entrepreneur: null
+        };
+
+        function showSection(sectionId, element) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            element.classList.add('active');
+            
+            const currentBreadcrumb = document.querySelector('.header-breadcrumb .current');
+            currentBreadcrumb.innerText = element.querySelector('span').innerText;
+
+            if (sectionId === 'stats-section') {
+                // Short delay to ensure the section is visible for Chart.js
+                setTimeout(() => {
+                    if (typeof initCharts === 'function') {
+                        const newCharts = initCharts(activeStatsData, entrepreneurStatsData, chartsObj);
+                        if (newCharts) chartsObj = newCharts;
+                    } else {
+                        console.error("initCharts function not found in admin.js");
+                    }
+                }, 200);
+            }
+        }
+
+        // Initialize if stats is default section (unlikely but possible)
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.getElementById('stats-section').classList.contains('active')) {
+                setTimeout(() => {
+                    if (typeof initCharts === 'function') {
+                        chartsObj = initCharts(activeStatsData, entrepreneurStatsData, chartsObj);
+                    }
+                }, 200);
+            }
+        });
+      </script>
     </div>
   </div>
 

@@ -272,3 +272,112 @@ function showToast(message, type) {
         setTimeout(() => toast.remove(), 300);
     }, 4000);
 }
+function initCharts(activeStats, entrepreneurStats, existingCharts = {}) {
+    console.log("Initializing charts with data:", { activeStats, entrepreneurStats });
+    
+    try {
+        const revenueCtx = document.getElementById('revenueChart');
+        const entrepreneurCtx = document.getElementById('entrepreneurChart');
+        
+        if (!revenueCtx || !entrepreneurCtx) {
+            console.error("Canvas elements not found");
+            return existingCharts;
+        }
+
+        // Destroy existing charts if they exist to avoid overlaps
+        if (existingCharts.revenue) existingCharts.revenue.destroy();
+        if (existingCharts.entrepreneur) existingCharts.entrepreneur.destroy();
+
+        const labels = activeStats && activeStats.length > 0 
+            ? activeStats.map(d => formatMonth(d.month)) 
+            : ["Pas de données"];
+        const activeCounts = activeStats && activeStats.length > 0 
+            ? activeStats.map(d => d.count) 
+            : [0];
+        
+        // Helper to format months
+        function formatMonth(m) {
+            if (!m) return 'N/A';
+            const [year, month] = m.split('-');
+            const date = new Date(year, month - 1);
+            return date.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+        }
+
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nombre de personnes actives',
+                    data: activeCounts,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#10b981',
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom' },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, precision: 0 }
+                    }
+                }
+            }
+        });
+
+        const entLabels = entrepreneurStats && entrepreneurStats.length > 0 
+            ? entrepreneurStats.map(d => formatMonth(d.month)) 
+            : ["Pas de données"];
+        const entCounts = entrepreneurStats && entrepreneurStats.length > 0 
+            ? entrepreneurStats.map(d => d.count) 
+            : [0];
+
+        const entrepreneurChart = new Chart(entrepreneurCtx, {
+            type: 'line',
+            data: {
+                labels: entLabels,
+                datasets: [{
+                    label: 'Entrepreneurs Actifs',
+                    data: entCounts,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#2563eb',
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, precision: 0 }
+                    }
+                }
+            }
+        });
+
+        return { revenue: revenueChart, entrepreneur: entrepreneurChart };
+
+    } catch (error) {
+        console.error("Error initializing charts:", error);
+        return existingCharts;
+    }
+}
