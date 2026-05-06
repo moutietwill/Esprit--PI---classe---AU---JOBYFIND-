@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jobyfind — Inscription</title>
+  <link rel="icon" type="image/png" href="assets/images/all-img/jlog.png">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:    #2d79ff;
+      --navy:    #0b1f4b;
+      --light:   #f5f7fb;
+      --border:  #e2e8f0;
+      --text:    #374151;
+      --muted:   #9ca3af;
+      --radius:  10px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--light);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NAV ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 64px;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      color: var(--navy);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--blue); }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--blue); }
+
+    .nav-actions { display: flex; gap: 10px; align-items: center; }
+
+    .btn-outline {
+      padding: 8px 18px;
+      border: 1.5px solid var(--blue);
+      border-radius: 50px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all .2s;
+    }
+    .btn-outline:hover { background: var(--blue); color: #fff; }
+
+    .btn-solid {
+      padding: 8px 18px;
+      background: var(--blue);
+      border-radius: 50px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn-solid:hover { opacity: .88; }
+
+    /* ── MAIN ── */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 30px rgba(0,0,0,.07);
+      padding: 44px 40px;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .card-eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 8px;
+    }
+
+    .card h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px;
+      color: var(--navy);
+      margin-bottom: 28px;
+      line-height: 1.2;
+    }
+
+    /* Role tabs */
+    .role-tabs {
+      display: flex;
+      background: var(--light);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 26px;
+      gap: 4px;
+    }
+
+    .role-tab {
+      flex: 1;
+      text-align: center;
+      padding: 9px 6px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+      border: none;
+      background: transparent;
+    }
+    .role-tab i { display: block; font-size: 14px; margin-bottom: 3px; }
+    .role-tab.active {
+      background: #fff;
+      color: var(--blue);
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+
+    /* Form */
+    .form-row { display: flex; gap: 14px; }
+    .form-row .form-group { flex: 1; }
+
+    .form-group { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus { border-color: var(--blue); }
+
+    .input-icon-wrap { position: relative; }
+    .input-icon-wrap i {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .input-icon-wrap input { padding-left: 36px; }
+
+    /* Password strength */
+    .strength-bar {
+      display: flex;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .strength-segment {
+      flex: 1;
+      height: 3px;
+      border-radius: 99px;
+      background: var(--border);
+      transition: background .3s;
+    }
+    .strength-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .terms {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 22px;
+      margin-top: 6px;
+      line-height: 1.5;
+      cursor: pointer;
+    }
+    .terms input { margin-top: 2px; flex-shrink: 0; }
+    .terms a { color: var(--blue); text-decoration: none; font-weight: 500; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 13px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s;
+      margin-bottom: 22px;
+    }
+    .btn-submit:hover { opacity: .88; }
+
+    /* Divider */
+    .divider {
+      position: relative;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .divider::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--border);
+    }
+    .divider span {
+      position: relative;
+      background: #fff;
+      padding: 0 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Social buttons */
+    .social-row { display: flex; gap: 10px; margin-bottom: 24px; }
+    .btn-social {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      transition: border-color .2s, background .2s;
+    }
+    .btn-social:hover { border-color: var(--blue); background: var(--light); }
+
+    .card-footer-text {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .card-footer-text a { color: var(--blue); font-weight: 600; text-decoration: none; }
+    .card-footer-text a:hover { text-decoration: underline; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: #fff;
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .card { padding: 32px 24px; }
+      .form-row { flex-direction: column; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="index.html">Joby<span>find</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="course.html">Formations</a></li>
+      <li><a href="about.html">À propos</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a class="btn-outline" href="login.html">Connexion</a>
+      <a class="btn-solid" href="register.html">S'inscrire</a>
+      <a class="btn-outline" href="admin.html">backoffice</a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+    <div class="card">
+      <p class="card-eyebrow">Créer un compte</p>
+      <h1>Rejoignez Jobyfind</h1>
+
+      <!-- Role Tabs -->
+      <div class="role-tabs">
+        <button class="role-tab active" onclick="setTab(this)">
+          <i class="fa fa-lightbulb"></i> Entrepreneur
+        </button>
+        <button class="role-tab" onclick="setTab(this)">
+          <i class="fa fa-chalkboard-teacher"></i> Mentor
+        </button>
+        <button class="role-tab" onclick="setTab(this)">
+          <i class="fa fa-building"></i> Entreprise
+        </button>
+      </div>
+
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prénom</label>
+          <input type="text" placeholder="Mohamed">
+        </div>
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" placeholder="Ben Ali">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Nom d'utilisateur</label>
+        <div class="input-icon-wrap">
+          <i class="fa fa-at"></i>
+          <input type="text" placeholder="mohamedbenali">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Adresse e-mail</label>
+        <div class="input-icon-wrap">
+          <i class="fa fa-envelope"></i>
+          <input type="email" placeholder="vous@exemple.com">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <div class="input-icon-wrap">
+          <i class="fa fa-lock"></i>
+          <input type="password" id="pwd-input" placeholder="••••••••" oninput="updateStrength(this.value)">
+        </div>
+        <div class="strength-bar">
+          <div class="strength-segment" id="s1"></div>
+          <div class="strength-segment" id="s2"></div>
+          <div class="strength-segment" id="s3"></div>
+          <div class="strength-segment" id="s4"></div>
+        </div>
+        <p class="strength-label" id="strength-label">Entrez un mot de passe</p>
+      </div>
+
+      <label class="terms">
+        <input type="checkbox">
+        J'accepte les <a href="#">Conditions d'utilisation</a> et la <a href="#">Politique de confidentialité</a> de Jobyfind.
+      </label>
+
+      <button class="btn-submit">Créer mon compte</button>
+
+      <div class="divider"><span>ou s'inscrire avec</span></div>
+
+      <div class="social-row">
+        <a class="btn-social" href="#">
+          <i class="fab fa-google" style="color:#ea4335"></i> Google
+        </a>
+        <a class="btn-social" href="#">
+          <i class="fab fa-linkedin" style="color:#0077b5"></i> LinkedIn
+        </a>
+      </div>
+
+      <p class="card-footer-text">
+        Déjà un compte ? <a href="login.html">Se connecter</a>
+      </p>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    &copy; 2025 Jobyfind. Tous droits réservés. &nbsp;·&nbsp;
+    <a href="#" style="color:inherit">Confidentialité</a> &nbsp;·&nbsp;
+    <a href="#" style="color:inherit">Conditions d'utilisation</a>
+  </footer>
+
+  <script>
+    function setTab(el) {
+      document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function updateStrength(val) {
+      const segs = [s1, s2, s3, s4];
+      const label = document.getElementById('strength-label');
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+
+      const colors = ['#ef4444','#f97316','#facc15','#22c55e'];
+      const labels = ['Très faible','Faible','Moyen','Fort'];
+      segs.forEach((s, i) => s.style.background = i < score ? colors[score - 1] : 'var(--border)');
+      label.textContent = val.length === 0 ? 'Entrez un mot de passe' : labels[score - 1] || 'Très faible';
+      label.style.color = val.length === 0 ? 'var(--muted)' : colors[score - 1] || colors[0];
+    }
+  </script>
+
+</body>
+</html>

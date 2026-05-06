@@ -1,0 +1,16 @@
+# Dossiers dépendances
+vendor/
+
+# Fichiers de configuration sensibles (MOTS DE PASSE)
+config/mail.php
+config/twilio.php
+
+# Logs
+*.log
+sms_log.txt
+mail_errors.log
+sms_errors.log
+
+# Fichiers système
+.DS_Store
+Thumbs.db
