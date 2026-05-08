@@ -23,6 +23,8 @@ if (!$quiz) {
 $questions = $questionCtrl->getQuestionsByQuiz($quizId);
 shuffle($questions); // Randomiser l'ordre des questions
 
+$totalSeconds = count($questions) * 60; // 1 minute par question
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $userName = trim($_POST['user_name'] ?? 'Anonyme');
     $score = 0;
@@ -54,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Redirect to results
-    header("Location: quiz-result.php?score=$score&max=$maxScore&quiz=".urlencode($quiz['titre']));
+    header("Location: quiz-result.php?score=$score&max=$maxScore&quiz=".urlencode($quiz['titre'])."&name=".urlencode($userName));
     exit;
 }
 ?>
@@ -229,6 +231,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             min-width: 100px;
             text-align: right;
         }
+
+        /* ── CHRONOMETER ── */
+        .timer-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--navy);
+            border: 2px solid transparent;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        
+        /* Warning state (Orange) */
+        .timer-box.warning {
+            color: #f59e0b;
+            background: #fffbeb;
+            border-color: #f59e0b;
+        }
+
+        /* Critical state (Red + Pulse) */
+        .timer-box.critical {
+            color: #ef4444;
+            background: #fef2f2;
+            border-color: #ef4444;
+            animation: pulse-danger 1s infinite;
+        }
+
+        @keyframes pulse-danger {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); transform: scale(1); }
+            50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); transform: scale(1.02); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); }
+        }
+
+        /* ── OVERLAY FIN DE TEMPS ── */
+        .time-up-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        .time-up-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .time-up-box {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            transform: scale(0.9);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .time-up-overlay.active .time-up-box {
+            transform: scale(1);
+        }
+        .time-up-icon {
+            font-size: 60px;
+            color: #ef4444;
+            margin-bottom: 20px;
+        }
+        .time-up-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 28px;
+            color: var(--navy);
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -247,6 +329,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </nav>
 
 <div class="progress-sticky">
+    <div id="timerDisplay" class="timer-box">
+        <i class="fas fa-stopwatch"></i>
+        <span id="timerText">--:--</span>
+    </div>
     <div class="progress-track">
         <div id="progressBarFill" class="progress-bar-fill"></div>
     </div>
@@ -301,8 +387,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
+<!-- OVERLAY DE TEMPS ÉCOULÉ -->
+<div id="timeUpOverlay" class="time-up-overlay">
+    <div class="time-up-box">
+        <div class="time-up-icon"><i class="fas fa-hourglass-end"></i></div>
+        <h2 class="time-up-title">Temps écoulé !</h2>
+        <p style="color:var(--muted); margin-bottom:20px;">Le chronomètre est arrivé à zéro. Vos réponses vont être soumises automatiquement.</p>
+        <div style="color:var(--blue); font-size:24px;"><i class="fas fa-spinner fa-spin"></i></div>
+    </div>
+</div>
+
 <script>
+let totalSeconds = <?= $totalSeconds ?>;
+let isTimeUp = false;
+let timerInterval;
+
 function validateForm(e) {
+    if (isTimeUp) return true; // Contourner les validations si le temps est écoulé
+
     let isValid = true;
     document.querySelectorAll('.error-msg').forEach(el => el.style.display = 'none');
 
@@ -346,8 +448,55 @@ function updateProgress() {
     document.getElementById('progressText').textContent = `${count} / ${total} répondus`;
 }
 
-// Initial call to set progress if needed (on back button)
-window.onload = updateProgress;
+function startTimer() {
+    updateTimerDisplay();
+    timerInterval = setInterval(() => {
+        totalSeconds--;
+        updateTimerDisplay();
+
+        if (totalSeconds <= 0) {
+            clearInterval(timerInterval);
+            handleTimeUp();
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const formattedTime = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    
+    const timerText = document.getElementById('timerText');
+    const timerBox = document.getElementById('timerDisplay');
+    
+    timerText.textContent = formattedTime;
+
+    // Gestion des états visuels
+    timerBox.classList.remove('warning', 'critical');
+
+    if (totalSeconds <= 20 && totalSeconds > 0) {
+        timerBox.classList.add('critical'); // Rouge pulsant pour les dernières 20 secondes
+    } else if (totalSeconds <= 60 && totalSeconds > 0) {
+        timerBox.classList.add('warning'); // Orange pour la dernière minute
+    }
+}
+
+function handleTimeUp() {
+    isTimeUp = true;
+    // Afficher l'overlay bloquant
+    document.getElementById('timeUpOverlay').classList.add('active');
+    
+    // Attendre un peu pour que l'utilisateur lise le message, puis forcer la soumission
+    setTimeout(() => {
+        document.getElementById('quizForm').submit();
+    }, 2500);
+}
+
+// Initial call to set progress if needed (on back button) and start timer
+window.onload = function() {
+    updateProgress();
+    startTimer();
+};
 </script>
 
 </body>
