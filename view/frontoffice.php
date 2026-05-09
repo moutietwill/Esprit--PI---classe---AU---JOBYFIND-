@@ -1,7 +1,21 @@
 <?php
 include '../controller/formationC.php';
+include '../controller/avisC.php';
 $formationC = new formationC();
+$avisC = new avisC();
 $listeFormations = $formationC->listeFormation();
+
+// Attach ratings and sort by highest rating
+foreach ($listeFormations as &$f) {
+    $stats = $avisC->getAverageRating($f['id']);
+    $f['avgRating'] = $stats['moyenne'];
+    $f['ratingCount'] = $stats['count'];
+}
+unset($f);
+
+usort($listeFormations, function($a, $b) {
+    return $b['avgRating'] <=> $a['avgRating'];
+});
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -67,8 +81,11 @@ $listeFormations = $formationC->listeFormation();
           // Convert date "YYYY-MM-DD" to timestamp for sorting
           $timestamp = strtotime($f['date']) ?: 0;
           $titreLower = strtolower($f['titre']);
+          
+          $avgRating = $f['avgRating'];
+          $ratingCount = $f['ratingCount'];
       ?>
-      <div class="formation-card" data-titre="<?= htmlspecialchars($titreLower) ?>" data-categorie="<?= htmlspecialchars($f['categorie']) ?>" data-prix="<?= htmlspecialchars($f['prix']) ?>" data-date="<?= $timestamp ?>">
+      <div class="formation-card" data-titre="<?= htmlspecialchars($titreLower) ?>" data-categorie="<?= htmlspecialchars($f['categorie']) ?>" data-prix="<?= htmlspecialchars($f['prix']) ?>" data-date="<?= $timestamp ?>" data-rating="<?= $avgRating ?>">
         <div class="card-img <?= $catColor ?>">
           <span class="card-img-emoji">🎓</span>
           <span class="card-img-badge"> <?= htmlspecialchars($f['categorie']) ?></span>
@@ -76,6 +93,16 @@ $listeFormations = $formationC->listeFormation();
         </div>
         <div class="card-body">
           <div class="card-title"><?= htmlspecialchars($f['titre']) ?></div>
+          <div style="margin-top: 8px; display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--gray-500);">
+            <div style="color: #F59E0B; font-size: 1rem; letter-spacing: -2px;">
+              <?php
+                $fullStars = floor($avgRating);
+                $emptyStars = 5 - $fullStars;
+                echo str_repeat('★', $fullStars) . str_repeat('☆', $emptyStars);
+              ?>
+            </div>
+            <span><?= $avgRating ?> (<?= $ratingCount ?>)</span>
+          </div>
         </div>
         <div class="card-footer">
           <span class="card-price"><?= htmlspecialchars($f['prix']) ?> €</span>
@@ -132,7 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <option value="Autre">Autre</option>
         </select>
         <select id="sortControl">
-          <option value="default">Trier par : Plus récent</option>
+          <option value="rating-desc">Trier par : Mieux noté</option>
+          <option value="default">Plus récent</option>
           <option value="price-asc">Prix : Croissant (Moins cher)</option>
           <option value="price-desc">Prix : Décroissant (Plus cher)</option>
         </select>
@@ -184,6 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
           return parseFloat(a.getAttribute('data-prix')) - parseFloat(b.getAttribute('data-prix'));
         } else if (sortBy === 'price-desc') {
           return parseFloat(b.getAttribute('data-prix')) - parseFloat(a.getAttribute('data-prix'));
+        } else if (sortBy === 'rating-desc') {
+          return parseFloat(b.getAttribute('data-rating')) - parseFloat(a.getAttribute('data-rating'));
         } else {
           return parseInt(b.getAttribute('data-date')) - parseInt(a.getAttribute('data-date'));
         }
@@ -202,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.resetFilters = function() {
     searchInput.value = '';
     categoryFilter.value = 'all';
-    sortControl.value = 'default';
+    sortControl.value = 'rating-desc';
     filterAndSort();
   };
 });

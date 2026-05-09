@@ -1,11 +1,19 @@
 <?php
+session_start();
 include '../model/inscription.php';
 include '../model/formation.php';
 include '../controller/inscriptionC.php';
 include '../controller/formationC.php';
+include '../controller/api_stripe.php';
 
 $error = "";
 $success = "";
+
+// Affichage message de Stripe "annulé" si retour
+if (isset($_GET['status']) && $_GET['status'] === 'cancel') {
+    $error = "Paiement annulé. Vous pouvez réessayer.";
+}
+
 $inscriptionC = new inscriptionC();
 $formationC = new formationC();
 
@@ -29,16 +37,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         !empty($_POST["methode_paiement"]) &&
         !empty($_POST["id_formation"])
     ) {
-        $inscription = new inscription(
-            $_POST['nom'],
-            $_POST['prenom'],
-            $_POST['email'],
-            $_POST['telephone'],
-            $_POST['methode_paiement'],
-            (int)$_POST['id_formation']
-        );
-        $inscriptionC->addInscription($inscription);
-        $success = "Inscription enregistrée avec succès !";
+        
+        $post_formation_id = (int)$_POST['id_formation'];
+        $selected_formation = $formationC->getFormationById($post_formation_id);
+        
+        if ($_POST["methode_paiement"] === "Visa Card") {
+            // Sauvegarder les données du formulaire dans la session temporairement
+            $_SESSION['pending_inscription'] = [
+                'nom' => $_POST['nom'],
+                'prenom' => $_POST['prenom'],
+                'email' => $_POST['email'],
+                'telephone' => $_POST['telephone'],
+                'methode_paiement' => $_POST['methode_paiement'],
+                'id_formation' => $post_formation_id
+            ];
+
+            // 1. Préparer les données pour Stripe Checkout
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+            $domainName = $_SERVER['HTTP_HOST'];
+            $base_url = $protocol . $domainName . dirname($_SERVER['PHP_SELF']);
+            
+            $success_url = $base_url . "/success_stripe.php?session_id={CHECKOUT_SESSION_ID}";
+            $cancel_url  = $base_url . "/ajouterInscription.php?id_formation=" . $post_formation_id . "&status=cancel";
+            
+            $prix_cents = intval(floatval($selected_formation['prix']) * 100);
+            
+            // Si le prix est 0, on pourrait bloquer Stripe, mais on suppose un prix valide.
+            if ($prix_cents <= 0) $prix_cents = 1000; // minimum 10€ par ex. en fallback
+            
+            $data = [
+                'payment_method_types' => ['card'],
+                'line_items' => [
+                    [
+                        'price_data' => [
+                            'currency' => 'eur',
+                            'product_data' => [
+                                'name' => 'Inscription: ' . $selected_formation['titre'],
+                            ],
+                            'unit_amount' => $prix_cents,
+                        ],
+                        'quantity' => 1,
+                    ],
+                ],
+                'mode' => 'payment',
+                'success_url' => $success_url,
+                'cancel_url' => $cancel_url,
+                'customer_email' => $_POST['email']
+            ];
+
+            // 2. Appel cURL à l'API REST Stripe
+            $ch = curl_init('https://api.stripe.com/v1/checkout/sessions');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . api_stripe::getSecretKey()
+            ]);
+
+            $response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            $result = json_decode($response, true);
+
+            if ($http_code == 200 && isset($result['url'])) {
+                // Redirection vers l'URL de paiement Stripe
+                header("Location: " . $result['url']);
+                exit;
+            } else {
+                $error = "Erreur de communication avec Stripe: " . (isset($result['error']['message']) ? $result['error']['message'] : 'Erreur inconnue');
+            }
+            
+        } else {
+            // Traitement normal (D17)
+            $inscription = new inscription(
+                $_POST['nom'],
+                $_POST['prenom'],
+                $_POST['email'],
+                $_POST['telephone'],
+                $_POST['methode_paiement'],
+                $post_formation_id
+            );
+            $inscriptionC->addInscription($inscription);
+            
+            // Envoyer l'email de confirmation
+            include_once '../controller/mailer.php';
+            mailer::sendConfirmationEmail($_POST['email'], $_POST['nom'], $_POST['prenom'], $selected_formation['titre']);
+            
+            $success = "Inscription enregistrée avec succès ! Un e-mail de confirmation vous a été envoyé.";
+        }
     } else {
         $error = "Tous les champs sont obligatoires !";
     }

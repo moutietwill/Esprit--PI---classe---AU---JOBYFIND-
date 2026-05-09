@@ -46,14 +46,15 @@ $prompt .= "\nLa description doit inclure : les objectifs de la formation, le pu
 $prompt .= "Ne mets pas de titre ni de bullet points, juste un paragraphe fluide et professionnel. ";
 $prompt .= "Réponds UNIQUEMENT avec la description, sans aucune introduction ni commentaire.";
 
-// ── API config ──────────────────────────────────────────────────────
-$apiKey = 'AIzaSyCJ8ZQlw_tNJeUVSFYPWnPn8_TzDnafPvQ';
+// Charger les variables d'environnement
+require_once __DIR__ . '/../config_env.php';
 
-// Models to try in order (fallback chain)
+// ── API config ──────────────────────────────────────────────────────
+$apiKey = $_ENV['GEMINI_API_KEY'] ?? '';
+
 $models = [
     'gemini-2.5-flash',
     'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
 ];
 
 $payload = json_encode([
