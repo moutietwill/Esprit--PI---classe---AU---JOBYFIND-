@@ -31,6 +31,10 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
         $error = "Email ou mot de passe incorrect.";
     }
 }
+
+if (isset($_GET['error']) && $_GET['error'] === 'Securite') {
+    $error = "Déconnexion de sécurité : Contenu inapproprié détecté par l'IA.";
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -42,7 +46,6 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="assets/css/stylelogin.css">
-  <script src="assets/js/login.js"></script>
 </head>
 <body>
 
@@ -75,7 +78,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
 
       <?php if($error): ?>
         <div style="background:#fee2e2; color:#b91c1c; padding:10px; border-radius:6px; margin-bottom:15px; font-size:13px;">
-          <?php echo $error; ?>
+          <?php echo htmlspecialchars($error); ?>
         </div>
       <?php endif; ?>
 
@@ -92,7 +95,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
         <div class="form-group">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <label style="margin-bottom: 0;">Mot de passe</label>
-            <a href="#" class="forgot" style="font-size:12px;">Oublié ?</a>
+            <a href="forgot_password.php" class="forgot" style="font-size:12px;">Oublié ?</a>
           </div>
           <div class="input-icon-wrap" style="position: relative;">
             <i class="fa fa-lock" style="left:13px; position:absolute; top:50%; transform:translateY(-50%); color:var(--muted);"></i>
@@ -135,5 +138,6 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
     <a href="#" style="color:inherit">Conditions d'utilisation</a>
   </footer>
   
+  <script src="assets/js/login.js"></script>
 </body>
 </html>

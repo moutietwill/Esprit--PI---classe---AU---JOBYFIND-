@@ -25,6 +25,19 @@ if (isset($_POST['delete_account'])) {
 }
 
 $user = $userController->getUserById($userId);
+
+// --- SECURITY CHECK: If user was deleted or suspended by admin/AI ---
+if (!$user) {
+    session_destroy();
+    header('Location: signin.php?error=deleted');
+    exit();
+}
+if ($user['status'] === 'Suspendu') {
+    session_destroy();
+    header('Location: banned.php');
+    exit();
+}
+
 $profileData = $profileController->getProfileByUserId($userId);
 
 
@@ -49,9 +62,10 @@ if (isset($_POST['first_name'])) {
         'email' => $_POST['email'],
         'phone' => $_POST['phone'] ?? null,
         'city' => $_POST['city'] ?? null,
-        'username' => $user['username'], 
-        'password' => $user['password'], 
-        'role' => $_POST['role'] ?? $user['role'],
+        'username' => $user['username'],
+        'date_of_birth' => $user['date_of_birth'], // preserve existing value
+        'password' => $user['password'],
+        'role' => $user['role'], // role cannot be changed by user
         'status' => $user['status']
     ]);
     $userController->updateUser($updatedUser, $userId);
@@ -64,12 +78,25 @@ if (isset($_POST['first_name'])) {
         'ville' => $_POST['city'] ?? $profile->getVille(),
         'pays' => $_POST['pays'] ?? $profile->getPays(),
         'competences' => $_POST['competences'] ?? $profile->getCompetences(),
-        'profession' => $_POST['role'] ?? $profile->getProfession()
+        'profession' => $profile->getProfession()
     ]);
     $profileController->updateProfile($updatedProfile, $userId);
 
     header('Location: profile.php');
     exit();
+}
+
+// Handle password change
+if (isset($_POST['password']) && isset($_POST['password_confirm']) && !isset($_POST['first_name'])) {
+    $newPassword = trim($_POST['password']);
+    $confirmPassword = trim($_POST['password_confirm']);
+    if (strlen($newPassword) >= 8 && $newPassword === $confirmPassword) {
+        $userController->updatePassword($userId, $newPassword);
+        header('Location: profile.php?message=Mot de passe mis à jour');
+        exit();
+    } else {
+        $error_pwd = "Les mots de passe doivent correspondre et faire au moins 8 caractères.";
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -82,7 +109,6 @@ if (isset($_POST['first_name'])) {
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="assets/css/styleprofile.css">
-  <script src="assets/js/profile.js"></script>
 </head>
 <body>
 
@@ -103,17 +129,27 @@ if (isset($_POST['first_name'])) {
       <div class="profile-banner"></div>
 
       <div class="avatar-wrap">
-        <div class="avatar-img" id="avatar-display">
-          <?php if($profile->getPhoto_profil()): ?>
-            <img id="avatar-preview" src="<?php echo htmlspecialchars($profile->getPhoto_profil()); ?>" alt="Photo de profil">
-          <?php else: ?>
-            <span id="avatar-initials"><?php echo strtoupper(substr($user['first_name'],0,1).substr($user['last_name'],0,1)); ?></span>
-          <?php endif; ?>
+        <div class="avatar-img-container">
+          <div class="avatar-img" id="avatar-display">
+            <?php if($profile->getPhoto_profil()): ?>
+              <img id="avatar-preview" src="<?php echo htmlspecialchars($profile->getPhoto_profil()); ?>" alt="" class="loaded">
+            <?php else: ?>
+              <span id="avatar-initials"><?php echo strtoupper(substr($user['first_name'],0,1).substr($user['last_name'],0,1)); ?></span>
+              <img id="avatar-preview" src="" alt="" style="display:none">
+            <?php endif; ?>
+          </div>
+          
+          <div id="ai-scanner" class="ai-scanner-overlay" style="display:none">
+            <div class="scanner-ring"></div>
+            <span class="scanner-text">AI Scanning...</span>
+          </div>
+
+          <!-- The Professional Floating Plus Button -->
+          <label class="floating-upload-btn" for="avatar-input" title="Changer la photo">
+            <i class="fa fa-plus"></i>
+          </label>
         </div>
-        <label class="avatar-upload-btn" for="avatar-input" title="Changer la photo">
-          <i class="fa fa-camera"></i>
-        </label>
-        <input type="file" id="avatar-input" accept="image/*">
+        <input type="file" id="avatar-input" accept="image/*" style="display:none">
       </div>
 
       <div class="profile-info">
@@ -283,20 +319,58 @@ if (isset($_POST['first_name'])) {
         </div>
 
         <div id="view-pwd">
-          <p style="font-size:13px;color:var(--muted)">Assurez-vous d'utiliser un mot de passe fort.</p>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Assurez-vous d'utiliser un mot de passe fort pour protéger votre compte.</p>
+          
+          <div style="margin-bottom:15px; font-size:13px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+             <div style="margin-bottom:10px;">
+                <i class="fa fa-info-circle" style="color:var(--blue)"></i>
+                <strong>Besoin de réinitialiser ?</strong>
+             </div>
+             <button type="button" id="btn-send-reset" class="btn-outline" style="width:100%; font-size:12px; padding:8px;">
+                <i class="fa fa-paper-plane"></i> M'envoyer un code de récupération
+             </button>
+             <div id="reset-status" style="margin-top:8px; font-size:11px; display:none;"></div>
+          </div>
+
+          <?php if(isset($_GET['message']) && $_GET['message'] === 'Mot de passe mis à jour'): ?>
+            <div style="background:#ecfdf5; color:#065f46; padding:10px; border-radius:6px; margin-top:10px; font-size:13px; border:1px solid #10b981;">
+              <i class="fa fa-check-circle"></i> Mot de passe mis à jour avec succès.
+            </div>
+          <?php endif; ?>
         </div>
 
         <div id="edit-pwd" style="display:none">
-          <form action="profile.php" method="POST">
+          <form action="profile.php" method="POST" id="profile-pwd-form">
              <div class="form-grid">
                <div class="form-group full">
-                 <label for="f-pwd-new">Nouveau mot de passe * (min 6 caractères)</label>
+                 <label for="f-pwd-new">Nouveau mot de passe * <small style="color:#94a3b8">(min 8 caractères)</small></label>
                  <div class="pwd-group" style="position:relative;">
-                   <input type="password" name="password" id="f-pwd-new" placeholder="••••••••" style="width:100%; border:1px solid #e2e8f0; border-radius:6px; padding:10px;">
+                   <input type="password" name="password" id="f-pwd-new" placeholder="••••••••" 
+                          oninput="updateStrength(this.value)"
+                          style="width:100%; border:1px solid #e2e8f0; border-radius:6px; padding:10px; padding-right:40px;">
+                   <i class="fa fa-eye toggle-password" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #94a3b8;" onclick="togglePasswordVisibility('f-pwd-new', this)"></i>
                  </div>
+                 <div class="strength-bar" style="margin-top:8px;">
+                    <div class="strength-segment" id="s1"></div>
+                    <div class="strength-segment" id="s2"></div>
+                    <div class="strength-segment" id="s3"></div>
+                    <div class="strength-segment" id="s4"></div>
+                 </div>
+                 <p class="strength-label" id="strength-label" style="font-size:11px; margin-top:5px; color:#64748b;">Entrez un mot de passe</p>
                  <span id="error-f-pwd-new" class="controle-saisie"></span>
                </div>
+               
+               <div class="form-group full">
+                 <label for="f-pwd-confirm">Confirmer le mot de passe *</label>
+                 <div class="pwd-group" style="position:relative;">
+                   <input type="password" name="password_confirm" id="f-pwd-confirm" placeholder="••••••••" 
+                          style="width:100%; border:1px solid #e2e8f0; border-radius:6px; padding:10px; padding-right:40px;">
+                   <i class="fa fa-eye toggle-password" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #94a3b8;" onclick="togglePasswordVisibility('f-pwd-confirm', this)"></i>
+                 </div>
+                 <span id="error-f-pwd-confirm" class="controle-saisie"></span>
+               </div>
              </div>
+             
              <div class="form-actions">
                <button type="button" class="btn-cancel" onclick="toggleSection('pwd')">Annuler</button>
                <button type="submit" class="btn-save"><i class="fa fa-check"></i> Mettre à jour</button>
@@ -314,5 +388,8 @@ if (isset($_POST['first_name'])) {
     <a href="#" style="color:inherit">Conditions d'utilisation</a>
   </footer>
 
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="assets/js/profile.js"></script>
 </body>
-</html>

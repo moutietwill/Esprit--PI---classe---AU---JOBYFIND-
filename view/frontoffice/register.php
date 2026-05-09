@@ -5,13 +5,43 @@ require_once(__DIR__ . '/../../Model/Utilisateur.php');
 
 $error = "";
 
-if (
-    isset($_POST["first_name"]) &&
-    isset($_POST["last_name"]) &&
-    isset($_POST["email"]) &&
-    isset($_POST["password"])
-) {
-    if (
+// Turnstile Secret Key (Real key)
+define('TURNSTILE_SECRET_KEY', '1x0000000000000000000000000000000AA');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // Honeypot check
+    if (!empty($_POST['website'])) {
+        die("Bot detected.");
+    }
+
+    // Turnstile validation
+    $captchaOk = false;
+    $turnstileResponse = $_POST['cf-turnstile-response'] ?? '';
+    
+    if ($turnstileResponse) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://challenges.cloudflare.com/turnstile/v0/siteverify");
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+            'secret'   => TURNSTILE_SECRET_KEY,
+            'response' => $turnstileResponse,
+            'remoteip' => $_SERVER['REMOTE_ADDR']
+        ]));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Localhost fix
+        $res = curl_exec($ch);
+        curl_close($ch);
+        
+        $resData = json_decode($res, true);
+        if ($resData && $resData['success']) {
+            $captchaOk = true;
+        }
+    }
+
+    if (!$captchaOk) {
+        $error = "La vérification intelligente a échoué. Veuillez réessayer.";
+    } elseif (
         !empty($_POST["first_name"]) &&
         !empty($_POST["last_name"]) &&
         !empty($_POST["email"]) &&
@@ -33,15 +63,11 @@ if (
         $userId = $userController->addUser($user);
         
         if ($userId) {
-            // Fetch the user from DB to ensure session consistency (like signin.php)
             $dbUser = $userController->getUserById($userId);
             if ($dbUser) {
                 $_SESSION['user_id'] = $dbUser['id'];
                 $_SESSION['role'] = $dbUser['role'];
-                
-                // Ensure session is saved before redirect
                 session_write_close();
-                
                 header('Location: profile.php');
                 exit();
             }
@@ -52,6 +78,8 @@ if (
         $error = "Veuillez remplir tous les champs obligatoires.";
     }
 }
+
+$turnstileSiteKey = "1x00000000000000000000AA";
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -69,12 +97,12 @@ if (
     .strength-bar { display:flex; gap:6px; margin-top:8px; }
     .strength-segment { height:4px; flex:1; background:#e2e8f0; border-radius:2px; }
     .strength-label { font-size:11px; margin-top:6px; color:#64748b; }
+    .turnstile-wrap { margin: 20px 0; display: flex; justify-content: center; }
+    .honeypot { display: none; }
   </style>
-  <script src="assets/js/register.js"></script>
 </head>
 <body>
 
-  
   <nav>
     <a class="nav-logo" href="signin.php">Joby<span>find</span></a>
     <ul class="nav-links">
@@ -94,13 +122,12 @@ if (
     </div>
   </nav>
 
-  <!-- MAIN -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
   <main>
     <div class="card">
       <p class="card-eyebrow">Créer un compte</p>
       <h1>Rejoignez Jobyfind</h1>
-
-      <!-- Messages -->
 
       <?php if($error): ?>
         <div class="error-box">
@@ -108,13 +135,10 @@ if (
         </div>
       <?php endif; ?>
 
-      <?php if(isset($_GET['message'])): ?>
-        <div style="background:#fefce8; color:#a16207; padding:12px; border-radius:8px; margin-bottom:16px; font-size:14px; border:1px solid #eab308;">
-          <i class="fa fa-info-circle"></i> <?php echo htmlspecialchars($_GET['message']); ?>
-        </div>
-      <?php endif; ?>
-
       <form action="register.php" method="POST" id="register-form">
+          
+          <!-- Honeypot -->
+          <input type="text" name="website" class="honeypot" tabindex="-1" autocomplete="off">
 
           <!-- Role Tabs -->
           <div class="role-tabs">
@@ -134,22 +158,22 @@ if (
           <div class="form-row">
             <div class="form-group">
               <label>Prénom *</label>
-              <input type="text" name="first_name" id="first_name" placeholder="Mohamed" value="">
+              <input type="text" name="first_name" id="first_name" placeholder="Mohamed">
               <span id="error-first_name" class="controle-saisie"></span>
             </div>
             <div class="form-group">
               <label>Nom *</label>
-              <input type="text" name="last_name" id="last_name" placeholder="Ben Ali" value="">
+              <input type="text" name="last_name" id="last_name" placeholder="Ben Ali">
               <span id="error-last_name" class="controle-saisie"></span>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>Nom user </label>
+              <label>Nom d'utilisateur</label>
               <div class="input-icon-wrap">
                 <i class="fa fa-at"></i>
-                <input type="text" name="username" id="username" placeholder="mohamedbenali" value="">
+                <input type="text" name="username" id="username" placeholder="mohamedbenali">
               </div>
               <span id="error-username" class="controle-saisie"></span>
             </div>
@@ -158,7 +182,7 @@ if (
               <label>Date de naissance</label>
               <div class="input-icon-wrap">
                 <i class="fa fa-calendar"></i>
-                <input type="date" name="date_of_birth" id="date_of_birth" value="">
+                <input type="date" name="date_of_birth" id="date_of_birth">
               </div>
               <span id="error-date_of_birth" class="controle-saisie"></span>
             </div>
@@ -169,7 +193,7 @@ if (
               <label>Téléphone</label>
               <div class="input-icon-wrap">
                 <i class="fa fa-phone"></i>
-                <input type="text" name="phone" id="phone" placeholder="+216 12 345 678" value="">
+                <input type="text" name="phone" id="phone" placeholder="+216 12 345 678">
               </div>
               <span id="error-phone" class="controle-saisie"></span>
             </div>
@@ -177,7 +201,7 @@ if (
               <label>Ville</label>
               <div class="input-icon-wrap">
                 <i class="fa fa-city"></i>
-                <input type="text" name="city" id="city" placeholder="Tunis" value="">
+                <input type="text" name="city" id="city" placeholder="Tunis">
               </div>
               <span id="error-city" class="controle-saisie"></span>
             </div>
@@ -187,7 +211,7 @@ if (
             <label>Adresse e-mail *</label>
             <div class="input-icon-wrap">
               <i class="fa fa-envelope"></i>
-              <input type="text" name="email" id="email" placeholder="vous@exemple.com" value="">
+              <input type="text" name="email" id="email" placeholder="vous@exemple.com">
             </div>
             <span id="error-email" class="controle-saisie"></span>
           </div>
@@ -214,6 +238,11 @@ if (
             <span id="error-terms" class="controle-saisie" style="display:block; width:100%"></span>
           </label>
 
+          <!-- Cloudflare Turnstile -->
+          <div class="turnstile-wrap">
+            <div class="cf-turnstile" data-sitekey="<?php echo $turnstileSiteKey; ?>" data-theme="light"></div>
+          </div>
+
           <button class="btn-submit" type="submit">Créer mon compte</button>
       </form>
 
@@ -234,12 +263,12 @@ if (
     </div>
   </main>
 
-  <!-- FOOTER -->
   <footer>
     &copy; 2025 Jobyfind. Tous droits réservés. &nbsp;·&nbsp;
     <a href="#" style="color:inherit">Confidentialité</a> &nbsp;·&nbsp;
     <a href="#" style="color:inherit">Conditions d'utilisation</a>
   </footer>
 
+  <script src="assets/js/register.js"></script>
 </body>
 </html>

@@ -29,6 +29,21 @@ if (isset($_POST['delete_id'])) {
     }
 }
 
+// Handle user reactivation
+if (isset($_POST['reactivate_id'])) {
+    try {
+        $db = config::getConnexion();
+        $sql = "UPDATE utilisateurs SET status = 'Actif' WHERE id = :id";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['id' => $_POST['reactivate_id']]);
+        header('Location: admine.php?success=Compte réactivé avec succès');
+        exit();
+    } catch (Exception $e) {
+        $message = "Erreur lors de la réactivation.";
+        $messageType = "error";
+    }
+}
+
 
 if (isset($_POST['first_name']) && isset($_POST['last_name']) && isset($_POST['email'])) {
     try {
@@ -134,9 +149,15 @@ if (isset($_GET['success'])) {
         <i class="fa-solid fa-chart-line"></i>
         <span>Statistiques</span>
       </a>
-      <a class="sidebar-link" href="#">
+      <a class="sidebar-link" href="#" onclick="showSection('roles-section', this)">
         <i class="fa-solid fa-shield-halved"></i>
         <span>Rôles & Accès</span>
+        <?php 
+          $violationCount = count(array_filter($users, fn($u) => ($u['violations_count'] ?? 0) > 0));
+          if ($violationCount > 0): 
+        ?>
+          <span class="badge" style="background:var(--danger)"><?php echo $violationCount; ?></span>
+        <?php endif; ?>
       </a>
     </div>
 
@@ -288,6 +309,11 @@ if (isset($_GET['success'])) {
                   <td><span style="font-size:12px;color:var(--muted);"><?php echo isset($u['created_at']) ? date('d/m/Y', strtotime($u['created_at'])) : 'N/A'; ?></span></td>
                   <td>
                     <div class="action-btns">
+                      <?php if ($u['status'] === 'Suspendu'): ?>
+                        <button class="action-btn" onclick="confirmReactivatePHP(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars(($u['first_name']??'').' '.($u['last_name']??'')); ?>')" title="Réactiver le compte" style="color:#10b981; background:#ecfdf5; border-color:#10b981;">
+                          <i class="fa fa-unlock"></i>
+                        </button>
+                      <?php endif; ?>
                       <button class="action-btn view" onclick='viewFullProfilePHP(<?php echo $u['id']; ?>)' title="Voir Profil Complet"><i class="fa fa-eye"></i></button>
                       <button class="action-btn edit" onclick='editUserPHP(<?php echo json_encode($u); ?>)' title="Modifier"><i class="fa fa-pen"></i></button>
                       <button class="action-btn del" onclick="confirmDeletePHP(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars(($u['first_name']??'').' '.($u['last_name']??'')); ?>')" title="Supprimer"><i class="fa fa-trash"></i></button>
@@ -349,6 +375,77 @@ if (isset($_GET['success'])) {
         </div>
       </div>
 
+      <!-- Rôles & Accès (Violations) Section -->
+      <div id="roles-section" class="view-section">
+        <div class="table-card">
+          <div class="table-header">
+            <div>
+              <p class="table-title"><i class="fa fa-shield-halved"></i> Surveillance des Violations</p>
+              <p class="table-subtitle">Utilisateurs ayant enfreint les règles de la plateforme</p>
+            </div>
+          </div>
+
+          <table id="roles-table">
+            <thead>
+              <tr>
+                <th>Utilisateur</th>
+                <th>Fautes</th>
+                <th>Niveau de Risque</th>
+                <th style="text-align:center;">Statut (cliquer pour changer)</th>
+                <th>Notes de surveillance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php 
+                $riskyUsers = array_filter($users, fn($u) => ($u['violations_count'] ?? 0) > 0);
+                if (empty($riskyUsers)): 
+              ?>
+                <tr><td colspan="5" style="text-align:center;">Aucune violation enregistrée.</td></tr>
+              <?php else: ?>
+                <?php foreach ($riskyUsers as $u): ?>
+                  <tr>
+                    <td>
+                      <div class="user-cell">
+                        <div class="user-avatar" style="background:#fef2f2; color:#ef4444;"><?php echo strtoupper(substr($u['first_name']??'',0,1).substr($u['last_name']??'',0,1)); ?></div>
+                        <div>
+                          <p class="user-name"><?php echo htmlspecialchars($u['first_name'].' '.$u['last_name']); ?></p>
+                          <p class="user-email"><?php echo htmlspecialchars($u['email']); ?></p>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="font-weight:600;"><?php echo $u['violations_count']; ?> / 3</td>
+                    <td>
+                      <?php 
+                        $count = $u['violations_count'];
+                        if ($count == 1) echo '<span class="badge" style="background:#fef3c7; color:#92400e;">🟡 Risque Faible</span>';
+                        elseif ($count == 2) echo '<span class="badge" style="background:#ffedd5; color:#9a3412;">🟠 Risque Élevé</span>';
+                        else echo '<span class="badge" style="background:#fee2e2; color:#991b1b;">🔴 DANGER CRITIQUE</span>';
+                      ?>
+                    </td>
+                    <td style="text-align:center;">
+                      <span class="badge status-toggle <?php echo ($u['status']==='Suspendu')?'badge-red':(($u['status']==='Actif')?'badge-green':'badge-amber'); ?>" 
+                            onclick="toggleStatus(this, <?php echo $u['id']; ?>)" 
+                            style="cursor:pointer; transition: transform 0.2s; display:inline-block; user-select:none;"
+                            onmouseover="this.style.transform='scale(1.1)'"
+                            onmouseout="this.style.transform='scale(1)'">
+                        <?php echo $u['status']; ?>
+                      </span>
+                    </td>
+                    <td>
+                      <input type="text" class="form-input" 
+                             placeholder="Ajouter une note..." 
+                             value="<?php echo htmlspecialchars($u['violation_notes'] ?? ''); ?>"
+                             onchange="saveNote(<?php echo $u['id']; ?>, this.value)"
+                             style="width:100%; height:32px; font-size:12px; border-style:dashed;">
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <script>
         const activeStatsData = <?php echo json_encode($activeStats); ?>;
         const entrepreneurStatsData = <?php echo json_encode($entrepreneurStats); ?>;
@@ -391,6 +488,44 @@ if (isset($_GET['success'])) {
                 }, 200);
             }
         });
+
+        async function toggleStatus(badge, userId) {
+            badge.style.opacity = '0.5';
+            const formData = new FormData();
+            formData.append('id', userId);
+
+            try {
+                const res = await fetch('toggle_status.php', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    badge.innerText = data.next;
+                    badge.className = 'badge status-toggle ' + 
+                                     (data.next === 'Suspendu' ? 'badge-red' : 
+                                     (data.next === 'Actif' ? 'badge-green' : 'badge-amber'));
+                    showToast("Statut mis à jour : " + data.next);
+                }
+            } catch (e) {
+                showToast("Erreur de mise à jour", "error");
+            } finally {
+                badge.style.opacity = '1';
+            }
+        }
+
+        async function saveNote(userId, notes) {
+            const formData = new FormData();
+            formData.append('id', userId);
+            formData.append('notes', notes);
+
+            try {
+                const res = await fetch('save_notes.php', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Note enregistrée.");
+                }
+            } catch (e) {
+                showToast("Erreur lors de l'enregistrement de la note", "error");
+            }
+        }
       </script>
     </div>
   </div>
@@ -557,6 +692,24 @@ if (isset($_GET['success'])) {
       </form>
     </div>
   </div>
+  <!-- Reactivate Modal -->
+  <div class="modal-overlay" id="reactivate-modal-php">
+    <div class="modal" style="width:400px;">
+      <div class="modal-header">
+        <p class="modal-title" style="color:#10b981;"><i class="fa fa-unlock"></i> Réactiver</p>
+        <button class="modal-close" onclick="closeModalPHP('reactivate-modal-php')"><i class="fa fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <p>Voulez-vous vraiment réactiver le compte de <strong id="reactivate-name-php"></strong> ?</p>
+      </div>
+      <form action="admine.php" method="POST" class="modal-footer">
+          <input type="hidden" name="reactivate_id" id="php-reactivate-id">
+          <button type="button" class="btn-cancel" onclick="closeModalPHP('reactivate-modal-php')">Annuler</button>
+          <button type="submit" class="btn-primary" style="background:#10b981;">Confirmer la réactivation</button>
+      </form>
+    </div>
+  </div>
+
   <div class="toast-container" id="toast-container"></div>
 
 </body>

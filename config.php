@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Africa/Tunis');
 class config
 {
     private static $pdo = null;
@@ -12,7 +13,7 @@ class config
             $dbname = "jobyfind_database";
             try {
                 self::$pdo = new PDO(
-                    "mysql:host=$servername;dbname=$dbname",
+                    "mysql:host=$servername;dbname=$dbname;charset=utf8mb4",
                     $username,
                     $password,
                     [
@@ -20,6 +21,9 @@ class config
                         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
                     ]
                 );
+                // Sync MySQL timezone with PHP
+                $offset = date('P');
+                self::$pdo->exec("SET time_zone = '$offset'");
             } catch (Exception $e) {
                 die('Erreur: ' . $e->getMessage());
             }

@@ -102,6 +102,12 @@ function confirmDeletePHP(id, name) {
     document.getElementById('delete-modal-php').style.display = 'flex';
 }
 
+function confirmReactivatePHP(id, name) {
+    document.getElementById('php-reactivate-id').value = id;
+    document.getElementById('reactivate-name-php').innerText = name;
+    document.getElementById('reactivate-modal-php').style.display = 'flex';
+}
+
 function closeModalPHP(id) {
     document.getElementById(id).style.display = 'none';
 }

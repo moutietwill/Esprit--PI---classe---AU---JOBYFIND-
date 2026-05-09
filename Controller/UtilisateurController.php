@@ -10,6 +10,7 @@ class UtilisateurController
         
         $allowedSortFields = ['status', 'role', 'created_at', 'first_name', 'last_name', 'email'];
         if ($sort && in_array($sort, $allowedSortFields)) {
+            $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
             $sql .= " ORDER BY $sort $order";
         }
         
@@ -83,15 +84,26 @@ class UtilisateurController
         try {
             $db->beginTransaction();
 
+            // 1. Get email for clearing password resets
+            $stmtEmail = $db->prepare("SELECT email FROM utilisateurs WHERE id = :id");
+            $stmtEmail->execute(['id' => $id]);
+            $email = $stmtEmail->fetchColumn();
+
+            if ($email) {
+                $sqlResets = "DELETE FROM password_resets WHERE email = :email";
+                $reqResets = $db->prepare($sqlResets);
+                $reqResets->execute(['email' => $email]);
+            }
+
+            // 2. Delete Profile
             $sqlProfile = "DELETE FROM profiles WHERE Id_utilisateur = :id";
             $reqProfile = $db->prepare($sqlProfile);
-            $reqProfile->bindValue(':id', $id);
-            $reqProfile->execute();
+            $reqProfile->execute(['id' => $id]);
 
+            // 3. Delete User
             $sqlUser = "DELETE FROM utilisateurs WHERE id = :id";
             $reqUser = $db->prepare($sqlUser);
-            $reqUser->bindValue(':id', $id);
-            $reqUser->execute();
+            $reqUser->execute(['id' => $id]);
 
             $db->commit();
         } catch (Exception $e) {
@@ -197,6 +209,32 @@ class UtilisateurController
             $query->execute(['id' => $id]);
             $user = $query->fetch();
             return $user;
+        } catch (Exception $e) {
+            die('Erreur: ' . $e->getMessage());
+        }
+    }
+
+    public function getUserByEmail($email)
+    {
+        $sql = "SELECT * FROM utilisateurs WHERE email = :email LIMIT 1";
+        $db  = config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute(['email' => $email]);
+            return $query->fetch();
+        } catch (Exception $e) {
+            die('Erreur: ' . $e->getMessage());
+        }
+    }
+
+    public function updatePassword($id, $newPassword)
+    {
+        $sql = "UPDATE utilisateurs SET password = :password WHERE id = :id";
+        $db  = config::getConnexion();
+        try {
+            $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
+            $query  = $db->prepare($sql);
+            $query->execute(['password' => $hashed, 'id' => $id]);
         } catch (Exception $e) {
             die('Erreur: ' . $e->getMessage());
         }
