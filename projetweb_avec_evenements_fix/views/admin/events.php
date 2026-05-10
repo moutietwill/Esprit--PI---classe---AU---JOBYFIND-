@@ -612,6 +612,10 @@ $indexBase = $baseDir . '/index.php';
       <i class="fa-solid fa-clipboard-list"></i>
       <span>Inscriptions</span>
     </a>
+    <a class="sidebar-link" href="../../views/backoffice/admine.php">
+      <i class="fa-solid fa-users"></i>
+      <span>Utilisateurs</span>
+    </a>
   </div>
   <div class="sidebar-footer">
     <div class="admin-profile">

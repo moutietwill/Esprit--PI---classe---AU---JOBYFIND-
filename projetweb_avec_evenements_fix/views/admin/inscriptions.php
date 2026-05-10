@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
     $requestUri = $_SERVER['REQUEST_URI'];
     $redirectUrl = preg_replace('@/views/admin(?:/.*)?$@', '/projetweb_avec_evenements/public/index.php/admin/inscriptions', $requestUri);
@@ -458,6 +458,10 @@ $indexBase = $baseDir . '/index.php';
     <a class="sidebar-link active" href="<?php echo htmlspecialchars($indexBase . '/admin/inscriptions'); ?>">
       <i class="fa-solid fa-clipboard-list"></i>
       <span>Inscriptions</span>
+    </a>
+    <a class="sidebar-link" href="../../views/backoffice/admine.php">
+      <i class="fa-solid fa-users"></i>
+      <span>Utilisateurs</span>
     </a>
   </div>
   <div class="sidebar-footer">

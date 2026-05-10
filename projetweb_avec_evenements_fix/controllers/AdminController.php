@@ -4,7 +4,12 @@ require_once __DIR__ . '/../models/Event.php';
 class AdminController extends Controller {
 
     public function __construct() {
-        // Initialization if needed
+        if (!isset($_SESSION)) {
+            session_start();
+        }
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
+            $this->redirect('../../views/frontoffice/signin.php');
+        }
     }
 
     /**
@@ -120,12 +125,17 @@ class AdminController extends Controller {
                     $imagePath = $this->handleImageUpload($_FILES['image']);
                 }
 
+                $idOrganisateur = $_POST['idOrganisateur'] ?? '';
+                if (empty($idOrganisateur) && isset($_SESSION['user_id'])) {
+                    $idOrganisateur = $_SESSION['user_id'];
+                }
+
                 $event = new Event([
                     'titre' => $_POST['titre'] ?? '',
                     'description' => $_POST['description'] ?? '',
                     'date' => $_POST['date'] ?? '',
                     'lieu' => $_POST['lieu'] ?? '',
-                    'idOrganisateur' => $_POST['idOrganisateur'] ?? '',
+                    'idOrganisateur' => $idOrganisateur,
                     'image' => $imagePath
                 ]);
 
@@ -198,7 +208,11 @@ class AdminController extends Controller {
                 $event->setDescription($_POST['description'] ?? '');
                 $event->setDate($_POST['date'] ?? '');
                 $event->setLieu($_POST['lieu'] ?? '');
-                $event->setIdOrganisateur($_POST['idOrganisateur'] ?? '');
+                $idOrganisateur = trim($_POST['idOrganisateur'] ?? '');
+                if (empty($idOrganisateur)) {
+                    $idOrganisateur = $event->getIdOrganisateur();
+                }
+                $event->setIdOrganisateur($idOrganisateur);
 
                 if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
                     $imagePath = $this->handleImageUpload($_FILES['image'], $event->getImage());

@@ -9,6 +9,7 @@ class Controller {
     protected function render($view, $data = []) {
         extract($data);
         $viewPath = __DIR__ . '/../views/' . $view . '.php';
+        $baseUrl = $this->baseUrl();
 
         if (!is_file($viewPath)) {
             http_response_code(404);

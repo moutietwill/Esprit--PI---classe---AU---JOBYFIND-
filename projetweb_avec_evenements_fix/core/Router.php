@@ -6,21 +6,53 @@ class Router
         '' => ['controller' => 'EventsController', 'action' => 'index'],
         'events' => ['controller' => 'EventsController', 'action' => 'index'],
         'admin' => ['controller' => 'AdminController', 'action' => 'index'],
+        'admin/blog' => ['controller' => 'AdminBlogController', 'action' => 'index'],
+        'blog' => ['controller' => 'BlogController', 'action' => 'index'],  // Frontend
+        'api' => ['controller' => 'ApiController', 'action' => 'handle'],
     ];
 
     public function dispatch(string $requestUri, string $scriptName): void
     {
         $path = $this->extractPath($requestUri, $scriptName);
         $segments = $path === '' ? [] : array_values(array_filter(explode('/', $path)));
-
-        $routeKey = strtolower($segments[0] ?? '');
-        $route = $this->routes[$routeKey] ?? $this->routes[''];
+        [$routeKey, $route] = $this->resolveRoute($segments);
 
         $controllerName = $route['controller'];
-        $action = $segments[1] ?? $route['action'];
-        $params = array_slice($segments, $routeKey === '' ? 0 : 2);
+        $routeDepth = $routeKey === '' ? 0 : count(explode('/', $routeKey));
+        $action = $segments[$routeDepth] ?? $route['action'];
+        $params = array_slice($segments, $routeDepth + 1);
 
         $this->invoke($controllerName, $action, $params);
+    }
+
+    private function resolveRoute(array $segments): array
+    {
+        if (empty($segments)) {
+            return ['', $this->routes['']];
+        }
+
+        $candidates = array_keys($this->routes);
+        usort($candidates, static function ($a, $b) {
+            return substr_count($b, '/') <=> substr_count($a, '/');
+        });
+
+        foreach ($candidates as $candidate) {
+            if ($candidate === '') {
+                continue;
+            }
+
+            $candidateSegments = explode('/', strtolower($candidate));
+            if (count($candidateSegments) > count($segments)) {
+                continue;
+            }
+
+            $pathSlice = array_slice(array_map('strtolower', $segments), 0, count($candidateSegments));
+            if ($pathSlice === $candidateSegments) {
+                return [$candidate, $this->routes[$candidate]];
+            }
+        }
+
+        return ['', $this->routes['']];
     }
 
     private function extractPath(string $requestUri, string $scriptName): string

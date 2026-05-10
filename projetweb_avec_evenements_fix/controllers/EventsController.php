@@ -50,6 +50,9 @@ class EventsController extends Controller {
      * Store new event in database
      */
    public function store() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $description = trim($_POST['description'] ?? '');
@@ -62,12 +65,14 @@ class EventsController extends Controller {
                 $imagePath = $this->handleImageUpload($_FILES['image']);
             }
 
+            $idOrganisateur = $_SESSION['user_id'] ?? $_POST['idOrganisateur'] ?? 0;
+
             $event = new Event([
                 'titre' => $_POST['titre'] ?? '',
                 'description' => $description,
                 'date' => $_POST['date'] ?? '',
                 'lieu' => $_POST['lieu'] ?? '',
-                'idOrganisateur' => (int)($_POST['idOrganisateur'] ?? 0),
+                'idOrganisateur' => (int)$idOrganisateur,
                 'image' => $imagePath
             ]);
 

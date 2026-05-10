@@ -1066,6 +1066,18 @@ function buildEventImageUrl(string $imageDbPath, string $basePath): string
   <ul class="nav-links">
     <li><a href="<?php echo htmlspecialchars($basePath . '/index.php/admin/events', ENT_QUOTES, 'UTF-8'); ?>" class="active">Événements</a></li>
   </ul>
+  <div class="nav-actions">
+      <?php if(isset($_SESSION['user_id'])): ?>
+        <a class="btn btn-outline" style="background:#10b981; border:none; color:#fff;" href="<?php echo htmlspecialchars($basePath . '/../views/frontoffice/profile.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="fa fa-user"></i> Mon Profil</a>
+        <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'Admin'): ?>
+            <a class="btn btn-outline" href="<?php echo htmlspecialchars($basePath . '/../views/backoffice/admine.php', ENT_QUOTES, 'UTF-8'); ?>">Dashboard Admin</a>
+        <?php endif; ?>
+        <a class="btn btn-outline" href="<?php echo htmlspecialchars($basePath . '/../views/frontoffice/logout.php', ENT_QUOTES, 'UTF-8'); ?>">Déconnexion</a>
+      <?php else: ?>
+        <a class="btn btn-outline" href="<?php echo htmlspecialchars($basePath . '/../views/frontoffice/signin.php', ENT_QUOTES, 'UTF-8'); ?>">Connexion</a>
+        <a class="btn btn-primary" href="<?php echo htmlspecialchars($basePath . '/../views/frontoffice/register.php', ENT_QUOTES, 'UTF-8'); ?>">S'inscrire</a>
+      <?php endif; ?>
+  </div>
 </nav>
 
 <!-- HERO -->
