@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="assets/css/chatbot.css">
   <link rel="stylesheet" href="assets/css/panier.css">
+  <link rel="stylesheet" href="assets/css/matching.css">
   <style>
     /* ── RESET & VARIABLES ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Sans', sans-serif; }
@@ -273,7 +274,7 @@
       <p>Aucune offre ne correspond à votre recherche.</p>
     </div>
   </div>
-
+<style></style>
 <script>
 (function () {
   const searchInput  = document.getElementById('searchInput');
@@ -378,6 +379,9 @@
 
 <!-- Panier Widget -->
 <script src="assets/js/panier.js"></script>
+
+<!-- Matching System Widget -->
+<script src="assets/js/matching.js"></script>
 
 </body>
 </html>

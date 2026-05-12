@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Validate Description
-            if (description.value.trim().length < 15) {
+            if (description.value.trim().length < 2) {
                 document.getElementById('error-description_offre').style.display = 'block';
                 description.style.borderColor = 'red';
                 isValid = false;
@@ -58,6 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault(); // Stop form from submitting
             }
         });
+
+        // Validation en temps réel (supprimée car annulée)
     }
 
     // --- Validation Formulaire Candidature ---

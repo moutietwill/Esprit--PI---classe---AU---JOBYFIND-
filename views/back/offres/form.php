@@ -25,7 +25,7 @@
         <div class="form-group">
             <label class="form-label">Description compléte</label>
             <textarea id="description_offre" name="description" class="form-input" rows="5"><?= $isEdit ? htmlspecialchars($offreData['description']) : '' ?></textarea>
-            <span class="form-error" id="error-description_offre">La description est requise (min 15 caractères).</span>
+            <span class="form-error" id="error-description_offre">La description est requise (min 2 caractères).</span>
         </div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
