@@ -1,0 +1,167 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PRECISE UI RECREATION — Based on User Screenshot
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.eng-zone {
+    padding: 20px;
+    border-top: 1px solid #f3f4f6;
+    background: #fff;
+}
+
+/* ── Star Rating (Square style) ── */
+.rating-section {
+    margin-bottom: 20px;
+}
+.rating-label {
+    font-size: 13px;
+    color: #4b5563;
+    margin-bottom: 8px;
+    display: block;
+}
+.star-box-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+.star-box {
+    width: 24px;
+    height: 24px;
+    border: 1.5px solid #374151;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: white;
+    transition: all 0.2s;
+    padding: 0;
+}
+.star-box i {
+    font-size: 14px;
+    color: #374151;
+}
+.star-box.active {
+    background: #374151;
+}
+.star-box.active i {
+    color: white;
+}
+.rating-stats {
+    font-size: 13px;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.rating-stats span { font-weight: 600; }
+.rating-stats i { color: #f59e0b; font-size: 12px; }
+
+/* ── Like/Comment Large Buttons ── */
+.main-eng-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.big-eng-btn {
+    height: 44px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-like {
+    background: #2d79ff;
+    border: none;
+    color: white;
+}
+.btn-like:hover { background: #1d4ed8; }
+.btn-like.unliked {
+    background: white;
+    border: 1px solid #e5e7eb;
+    color: #6b7280;
+}
+.btn-cmt {
+    background: white;
+    border: 1px solid #e5e7eb;
+    color: #6b7280;
+}
+.btn-cmt:hover { background: #f9fafb; }
+
+/* ── Comments ── */
+.cmt-status-text {
+    text-align: center;
+    color: #9ca3af;
+    font-size: 14px;
+    margin: 20px 0;
+}
+.cmt-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.cmt-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.cmt-input-field {
+    width: 100%;
+    padding: 12px 45px 12px 15px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+}
+.mic-btn {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 16px;
+    z-index: 10;
+}
+
+/* ── Bottom Action Buttons ── */
+.cmt-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+.action-btn {
+    height: 38px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.action-btn:hover { background: #f9fafb; }
+.action-btn i { font-size: 12px; color: #6b7280; }
+
+/* ── Comment List Design ── */
+.cmt-list {
+    margin-bottom: 15px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.cmt-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+.cmt-author { font-weight: 600; font-size: 13px; color: #111827; }
+.cmt-date { font-size: 11px; color: #9ca3af; margin-left: 8px; }
+.cmt-text { font-size: 13px; color: #4b5563; margin-top: 4px; }

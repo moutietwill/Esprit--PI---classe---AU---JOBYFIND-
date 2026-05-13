@@ -1,0 +1,7 @@
+# Secrets
+config.local.php
+
+# XAMPP / Temp
+.DS_Store
+Thumbs.db
+*.log

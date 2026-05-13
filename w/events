@@ -1,0 +1,4 @@
+<?php
+// Redirect alias for /view/events to the real admin events page
+header('Location: /projetweb_avec_evenements/public/index.php/admin/events');
+exit;
